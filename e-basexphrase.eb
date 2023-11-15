@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+#20231114_21:42_est--EJR
+#=== example =================================================================
+# Phrase maker for private key that are 64 character base64 number
+# Private key (hex):
+#  ef235aacf90d9f4aadd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2
+# Entropy:
+#  1110111100100011010110101010110011111001000011011001111101001010101011011101100011001001001011100100101100100101011000101110000111011001111010111001011111110000110111111001101110100011101101010000100000100101100001110011100111001011000000010011110110110010
+# Checksum:
+#  01100000
+# Full Seed (binary):
+#  111011110010001101011010101011001111100100001101100111110100101010101101110110001100100100101110010010110010010101100010111000011101100111101011100101111111000011011111100110111010001110110101000010000010010110000111001110011100101100000001001111011011001001100000
+# ==== Your seed phrase is ====
+#  upset bracket private velvet supreme pipe resist bomb comic float flavor senior pact slogan sell vibrant photo portion annual attack original letter walnut equal
+#=============================================================================
+clear
+# VARS
+  txt_nums="/tmp/numbers.txt"
+  txt_seed="/tmp/seed_phrase.txt"
+
+# FUNCS
+  hex_to_bin() {
+      local hex=$1
+      for (( i=0; i<${#hex}; i++ )); do
+          case ${hex:$i:1} in
+              0) echo -n "0000" ;;
+              1) echo -n "0001" ;;
+              2) echo -n "0010" ;;
+              3) echo -n "0011" ;;
+              4) echo -n "0100" ;;
+              5) echo -n "0101" ;;
+              6) echo -n "0110" ;;
+              7) echo -n "0111" ;;
+              8) echo -n "1000" ;;
+              9) echo -n "1001" ;;
+              A|a) echo -n "1010" ;;
+              B|b) echo -n "1011" ;;
+              C|c) echo -n "1100" ;;
+              D|d) echo -n "1101" ;;
+              E|e) echo -n "1110" ;;
+              F|f) echo -n "1111" ;;
+          esac
+      done
+  }
+
+  sha256() { echo -n $1 | shasum -a 256 -0; }
+
+# Read the hexadecimal key
+  #hex_key='ef235aacf90d9f4aadd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2'
+  echo "Enter your 64-character hexadecimal key:"; read hex_key
+# Convert hex to binary
+  entropy=$(hex_to_bin $hex_key)
+# Calculate SHA-256 checksum
+  checksum=$(sha256 $entropy | awk '{print $1}' | cut -c1-2)
+# Append checksum to entropy
+  checksum_bin=$(hex_to_bin $checksum)
+  entropy_checksum=$entropy$checksum_bin
+# Split into 11-bit groups and convert to numbers
+  for (( i=0; i<${#entropy_checksum}; i+=11 )); do
+    binary_group=${entropy_checksum:$i:11}
+    echo $((2#${binary_group} + 1))
+  done > "$txt_nums"
+# Convert numbers to words using wordlist
+  while read number; do
+    sed -n "${number}p" "$HOME/a-me/z-share/code/bitwords.txt"
+  done < "$txt_nums" > "$txt_seed"
+
+# SHOW OUTPUTS ------------------------------------------------------------
+echo -e "Entropy:\n $entropy"
+echo -e "Checksum:\n $(hex_to_bin $checksum)"
+echo -e "Full Seed (binary):\n $entropy_checksum"
+echo "==== Your seed phrase is ===="; cat "$txt_seed"; echo '-------------------------------------------'
