@@ -155,7 +155,7 @@ local output=$(python3 -c "$pycode" "$arg1"); IFS='|' read -r prvkeyhex wif pubk
   }
 
   hex_to_bin() { local hex=$1; for ((i=0; i<${#hex}; i++)); do case ${hex:$i:1} in 0) echo -n "0000" ;; 1) echo -n "0001" ;; 2) echo -n "0010" ;; 3) echo -n "0011" ;; 4) echo -n "0100" ;; 5) echo -n "0101" ;; 6) echo -n "0110" ;; 7) echo -n "0111" ;; 8) echo -n "1000" ;; 9) echo -n "1001" ;; [Aa]) echo -n "1010" ;; [Bb]) echo -n "1011" ;; [Cc]) echo -n "1100" ;; [Dd]) echo -n "1101" ;; [Ee]) echo -n "1110" ;; [Ff]) echo -n "1111" ;; esac; done; }
-  sha256() { echo -n $1 | shasum -a 256 -0; }
+  sha_256() { echo -n $1 | shasum -a 256 -0; }
   bin_to_hex() { local bin="$1"; case "$bin" in 0000) echo -n "0" ;; 0001) echo -n "1" ;; 0010) echo -n "2" ;; 0011) echo -n "3" ;; 0100) echo -n "4" ;; 0101) echo -n "5" ;; 0110) echo -n "6" ;; 0111) echo -n "7" ;; 1000) echo -n "8" ;; 1001) echo -n "9" ;; 1010) echo -n "a" ;; 1011) echo -n "b" ;; 1100) echo -n "c" ;; 1101) echo -n "d" ;; 1110) echo -n "e" ;; 1111) echo -n "f" ;; *) echo "Invalid binary input: $bin"; return 1 ;; esac; }
 
 ## VARS ###################################################
@@ -206,7 +206,7 @@ mma4:
 #~~Convert $nm1 (64 char hex string) to binary as $nm2
   nm2=$(hex_to_bin $nm1)
 #~~Get sha256sum of $nm2 & only record the 1st two chars of the output as $nm3
-  nm3=$(sha256 $nm2 | awk '{print $1}' | cut -c1-2)
+  nm3=$(sha_256 $nm2 | awk '{print $1}' | cut -c1-2)
 #~~Convert $nm3 (our 2 chars of hex) to binary as $nm4
   nm4=$(hex_to_bin $nm3)
 #~~Append our $nm4 (this is the checksum) to $nm2 (orignal string in binary)
