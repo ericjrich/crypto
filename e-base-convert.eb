@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+#20231208_19:17_est--EJR
+
+### FUNCTIONS #######################################################
+
+  toclip() { echo -n "$1" | xclip -selection clipboard; }
+  jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
+  crap() { read -n 1 -p '*ANY-KEY*'; echo; }
+
+  hex2bin() { local hex=$1; for ((i=0; i<${#hex}; i++)); do case ${hex:$i:1} in 0) echo -n "0000" ;; 1) echo -n "0001" ;; 2) echo -n "0010" ;; 3) echo -n "0011" ;; 4) echo -n "0100" ;; 5) echo -n "0101" ;; 6) echo -n "0110" ;; 7) echo -n "0111" ;; 8) echo -n "1000" ;; 9) echo -n "1001" ;; [Aa]) echo -n "1010" ;; [Bb]) echo -n "1011" ;; [Cc]) echo -n "1100" ;; [Dd]) echo -n "1101" ;; [Ee]) echo -n "1110" ;; [Ff]) echo -n "1111" ;; esac; done; }
+  bin2dec() { local bin="$1"; local dec=""; dec=$(echo "ibase=2; $bin" | bc | tr -d '\n\\'); echo "$dec"; }
+  dec2hex() { local dec="$1"; local hex=""; hex=$(echo "ibase=10; obase=16; $dec" | bc); echo "${hex,,}"; }
+  hex2dec() { local hex="$1"; local bin=$(hex2bin "$hex"); dec=$(bin2dec "$bin"); echo "$dec"; }
+  bin2hex() { local bin="$1" hex=""; while (( (i + ${#bin}) % 4 != 0 )); do bin="0$bin"; done; for ((i = 0; i < ${#bin}; i += 4)); do chunk="${bin:i:4}"; case "$chunk" in 0000) hex+="0" ;; 0001) hex+="1" ;; 0010) hex+="2" ;; 0011) hex+="3" ;; 0100) hex+="4" ;; 0101) hex+="5" ;; 0110) hex+="6" ;; 0111) hex+="7" ;; 1000) hex+="8" ;; 1001) hex+="9" ;; 1010) hex+="a" ;; 1011) hex+="b" ;; 1100) hex+="c" ;; 1101) hex+="d" ;; 1110) hex+="e" ;; 1111) hex+="f" ;; *) echo "Invalid binary input: $chunk"; return 1 ;; esac; done; echo "$hex"; }
+  dec2bin() { local dec="$1"; local hex=$(dec2hex "$dec"); local bin=$(hex2bin "$hex"); echo "$bin"; }
+  sha_256() { echo -n $1 | shasum -a 256 -0; }
+
+## MAIN MENU a ############################################
+mma:
+  clear
+  echo '== BASE Converter ==='
+  echo '(1) HEX 2 BIN'
+  echo '(2) HEX 2 DEC'
+  echo '(3) BIN 2 HEX'
+  echo '(4) BIN 2 DEC'
+  echo '(5) DEC 2 HEX'
+  echo '(6) DEC 2 BIN'
+  echo '(\) EXIT'; read -rsn1 inkey; echo; inkey=${inkey,,}; clear; case "$inkey" in
+  ### CASES #########
+  '1') jumpto mma1 ;;
+  '2') jumpto mma2 ;;
+  '3') jumpto mma3 ;;
+  '4') jumpto mma4 ;;
+  '5') jumpto mma5 ;;
+  '6') jumpto mma6 ;;
+  '\') exit 0;; *) jumpto mma ;; esac
+## SUBS ###################################################
+#----------------
+mma1:
+  echo 'hex2bin: Enter Your Number'; read hex2bin_IN
+  echo '.............................'
+  hex2bin_OUT=$(hex2bin "$hex2bin_IN")
+  toclip "$hex2bin_OUT"
+  echo -e "hex2bin  (Length= ${#hex2bin_OUT})\n  $hex2bin_OUT\n\n* Results Available On ClipBoard *"
+  sleep .5
+  crap
+jumpto mma
+#----------------
+mma2:
+  echo 'hex2dec: Enter Your Number'; read hex2dec_IN
+  hex2dec_OUT=$(hex2dec "$hex2dec_IN")
+  toclip "$hex2dec_OUT"
+  echo -e "hex2dec  (Length= ${#hex2dec_OUT})\n  $hex2dec_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma  # Return to the main menu
+#----------------
+mma3:
+  echo 'bin2hex: Enter Your Number'; read bin2hex_IN
+  bin2hex_OUT=$(bin2hex "$bin2hex_IN")
+  toclip "$bin2hex_OUT"
+  echo -e "bin2hex  (Length= ${#bin2hex_OUT})\n  $bin2hex_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma  # Return to the main menu
+#----------------
+mma4:
+  echo 'bin2dec: Enter Your Number'; read bin2dec_IN
+  bin2dec_OUT=$(bin2dec "$bin2dec_IN")
+  toclip "$bin2dec_OUT"
+  echo -e "bin2dec  (Length= ${#bin2dec_OUT})\n  $bin2dec_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma  # Return to the main menu
+#----------------
+mma5:
+  echo 'dec2hex: Enter Your Number'; read dec2hex_IN
+  dec2hex_OUT=$(dec2hex "$dec2hex_IN")
+  toclip "$dec2hex_OUT"
+  echo -e "dec2hex  (Length= ${#dec2hex_OUT})\n  $dec2hex_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma  # Return to the main menu
+#----------------
+mma6:
+  echo 'dec2bin: Enter Your Number'; read dec2bin_IN
+  dec2bin_OUT=$(dec2bin "$dec2bin_IN")
+  toclip "$dec2bin_OUT"
+  echo -e "dec2bin  (Length= ${#dec2bin_OUT})\n  $dec2bin_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma  # Return to the main menu
+#----------------
