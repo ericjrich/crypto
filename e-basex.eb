@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#20231210_15:08_est--EJR
+#20231211_18:46_est--EJR
 #BaseX EJR (migrated from python to bash)
-
+#
 #===========================================================================================================================
 pf1() {
 local arg1="$1"
@@ -215,9 +215,48 @@ bin_to_hex() { local bin="$1"; case "$bin" in 0000) echo -n "0" ;; 0001) echo -n
   hex2bin() { local hex=$1; for ((i=0; i<${#hex}; i++)); do case ${hex:$i:1} in 0) echo -n "0000" ;; 1) echo -n "0001" ;; 2) echo -n "0010" ;; 3) echo -n "0011" ;; 4) echo -n "0100" ;; 5) echo -n "0101" ;; 6) echo -n "0110" ;; 7) echo -n "0111" ;; 8) echo -n "1000" ;; 9) echo -n "1001" ;; [Aa]) echo -n "1010" ;; [Bb]) echo -n "1011" ;; [Cc]) echo -n "1100" ;; [Dd]) echo -n "1101" ;; [Ee]) echo -n "1110" ;; [Ff]) echo -n "1111" ;; esac; done; }
   bin2dec() { local bin="$1"; local dec=""; dec=$(echo "ibase=2; $bin" | bc | tr -d '\n\\'); echo "$dec"; }
   dec2hex() { local dec="$1"; local hex=""; hex=$(echo "ibase=10; obase=16; $dec" | bc); echo "${hex,,}"; }
-  hex2dec() { local hex="$1"; local bin=$(hex2bin "$hex"); dec=$(bin2dec "$bin"); echo "$dec"; }
+  hex2dec() { local hex="$1"; local bin=$(hex2bin "$hex"); local dec=$(bin2dec "$bin"); echo "$dec"; }
   bin2hex() { local bin="$1" hex=""; while (( (i + ${#bin}) % 4 != 0 )); do bin="0$bin"; done; for ((i = 0; i < ${#bin}; i += 4)); do chunk="${bin:i:4}"; case "$chunk" in 0000) hex+="0" ;; 0001) hex+="1" ;; 0010) hex+="2" ;; 0011) hex+="3" ;; 0100) hex+="4" ;; 0101) hex+="5" ;; 0110) hex+="6" ;; 0111) hex+="7" ;; 1000) hex+="8" ;; 1001) hex+="9" ;; 1010) hex+="a" ;; 1011) hex+="b" ;; 1100) hex+="c" ;; 1101) hex+="d" ;; 1110) hex+="e" ;; 1111) hex+="f" ;; *) echo "Invalid binary input: $chunk"; return 1 ;; esac; done; echo "$hex"; }
   dec2bin() { local dec="$1"; local hex=$(dec2hex "$dec"); local bin=$(hex2bin "$hex"); echo "$bin"; }
+
+wif2prv() {
+local IN="$1"
+local OUT
+# Decode from base58
+OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\')
+# Convert to lowercase (optional, but commonly done for consistency)
+OUT=${OUT,,}
+# Trim off the first 2 characters
+OUT=${OUT:2}
+# Crop to 64 characters from the beginning
+OUT=${OUT:0:64}
+echo "$OUT"
+}
+
+hex2b6() {
+  local IN=$(echo "$1" | rev)
+  local dec=$(hex2dec "$IN")
+  local base6_number=$(echo "obase=6; $dec" | bc | tr -d '\n\\')
+  echo "$base6_number"
+}
+
+b62hex() {
+  local base6="$1"
+  local result=$(echo "obase=16; ibase=6; $base6" | bc | tr -d '\n\\')
+  result=${result,,}
+  echo "$result"
+}
+dice() {
+  local result=""
+  local roll=""
+  for ((i = 1; i <= 99; i++)); do
+    clear
+    echo -e "Roll #$i (Last Roll Was=$roll)\nCurrent Results=$result\nRoll The Dice and Enter The Value\n[1-5 are normal 6=0]"; read -rsn1 roll
+    result="${result}${roll}"
+  done
+  echo "$result"
+  dice_OUT="$result"
+}
 
 ## VARS ###################################################
 basexfile="$HOME/Desktop/basex.txt"
@@ -331,6 +370,10 @@ mma6:
   echo '(4) BIN 2 DEC'
   echo '(5) DEC 2 HEX'
   echo '(6) DEC 2 BIN'
+  echo '(7) WIF 2 PRV (BASE58 WIF TO HEX PRIVATE KEY)'
+  echo '(8) hex 2 b6 (hex TO base6)'
+  echo '(9) b6 2 hex (base6 to base16) [good for dice]'
+  echo '(0) roll dice as base6'
   echo '(\) EXIT'; read -rsn1 inkey; echo; inkey=${inkey,,}; clear; case "$inkey" in
   ### CASES #########
   '1') jumpto mma6a ;;
@@ -339,6 +382,10 @@ mma6:
   '4') jumpto mma6d ;;
   '5') jumpto mma6e ;;
   '6') jumpto mma6f ;;
+  '7') jumpto mma6g ;;
+  '8') jumpto mma6h ;;
+  '9') jumpto mma6i ;;
+  '0') jumpto mma6j ;;
   '\') jumpto mma;; *) jumpto mma6 ;; esac
 ## SUBS ###################################################
 #----------------
@@ -397,4 +444,42 @@ mma6f:
   crap
 jumpto mma6  # Return to the main menu
 #----------------
+mma6g:
+  echo 'WIF 2 PRV (BASE58 WIF TO HEX PRIVATE KEY)'; read wif2prv_IN
+  wif2prv_OUT=$(wif2prv "$wif2prv_IN")
+  toclip "$wif2prv_OUT"
+  echo -e "WIF 2 PRV  (Length= ${#wif2prv_OUT})\n  $wif2prv_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma6  # Return to the main menu
+#----------------
+mma6h:
+  echo 'hex to b6'; read hex2b6_IN
+  hex2b6_OUT=$(hex2b6 "$hex2b6_IN")
+  toclip "$hex2b6_OUT"
+  echo -e "hex to b6 (Length= ${#hex2b6_OUT})\n  $hex2b6_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma6  # Return to the main menu
+#----------------
+mma6i:
+  echo 'b6 to hex (use with dice too [6 on di is 0, 99 rolls]'; read b62hex_IN
+  b62hex_OUT=$(b62hex "$b62hex_IN")
+  toclip "$b62hex_OUT"
+  echo -e "b6 to hex (Length= ${#b62hex_OUT})\n  $b62hex_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma6  # Return to the main menu
+#----------------
+mma6j:
+  clear
+  dice
+  toclip "$dice_OUT"
+  echo '----------------------------------------'
+  echo -e "Dice As Base 6 (Length= ${#dice_OUT})\n  $dice_OUT\n\n* Results Available On Clipboard *"
+  sleep .5
+  crap
+jumpto mma6  # Return to the main menu
+
+
 #===========================================================================================================================
