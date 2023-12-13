@@ -1,251 +1,211 @@
 #!/usr/bin/env bash
-#20231211_18:46_est--EJR
+#20231213_13:54_est--EJR
 #BaseX EJR (migrated from python to bash)
 #
-#===========================================================================================================================
+#== FUNCTIONS ==============================================================================================================
+# == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 pf1() {
 local arg1="$1"
 local pycode=$(cat <<PYEOF
 #!/usr/bin/env python3
-#base64 private key to others
-#20230815_1549_(est) EJR
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+
 import os, pyperclip, hashlib, base58, secrets, qrcode, subprocess, sys
 from Crypto.Hash import RIPEMD160
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+
 # Secp256k1 Curve Parameters
-a = 0
-b = 7
-p = 2 ** 256 - 2 ** 32 - 2 ** 9 - 2 ** 8 - 2 ** 7 - 2 ** 6 - 2 ** 4 - 1
-n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
-g = {
-  'x': 55066263022277343669578718895168534326250603453777594175500187360389116729240,
-  'y': 32670510020758816978083085130507043184471273380659243275938904335757337482424
-}
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Elliptic Curve Mathematics
+a, b, p, n = 0, 7, 2**256 - 2**32 - 2**9 - 2**8 - 2**7 - 2**6 - 2**4 - 1, 115792089237316195423570985008687907852837564279074904382605163141518161494337
+g = {'x': 55066263022277343669578718895168534326250603453777594175500187360389116729240, 'y': 32670510020758816978083085130507043184471273380659243275938904335757337482424}
+
+#= FUNCTIONS ====================================
 def modinv(a, m = p):
-    a = a % m if a < 0 else a
-    prevy, y = 0, 1
-    while a > 1:
-        q = m // a
-        y, prevy = prevy - q * y, y
-        a, m = m % a, a
-    return y
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+  a = a % m if a < 0 else a; prevy, y = 0, 1
+  while a > 1:
+    q = m // a; y, prevy = prevy - q * y, y; a, m = m % a, a
+  return y
+
 def double(point):
-    slope = ((3 * point['x'] ** 2) * modinv((2 * point['y']))) % p
-    x = (slope ** 2 - (2 * point['x'])) % p
-    y = (slope * (point['x'] - x) - point['y']) % p
-    return {'x': x, 'y': y}
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+  slope = ((3 * point['x'] ** 2) * modinv((2 * point['y']))) % p; x = (slope ** 2 - (2 * point['x'])) % p; y = (slope * (point['x'] - x) - point['y']) % p
+  return {'x': x, 'y': y}
+
 def add(point1, point2):
-    if point1 == point2:
-        return double(point1)
-    slope = ((point1['y'] - point2['y']) * modinv(point1['x'] - point2['x'])) % p
-    x = (slope ** 2 - point1['x'] - point2['x']) % p
-    y = ((slope * (point1['x'] - x)) - point1['y']) % p
-    return {'x': x, 'y': y}
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+  if point1 == point2:
+    return double(point1)
+  slope = ((point1['y'] - point2['y']) * modinv(point1['x'] - point2['x'])) % p; x = (slope ** 2 - point1['x'] - point2['x']) % p; y = ((slope * (point1['x'] - x)) - point1['y']) % p
+  return {'x': x, 'y': y}
+
 def multiply(k, point = g):
-    current = point
-    binary = format(k, 'b')[1:]
-    for char in binary:
-        current = double(current)
-        if char == '1':
-            current = add(current, point)
-    return current
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Convert Private Key to WIF
+  current = point; binary = format(k, 'b')[1:]
+  for char in binary:
+    current = double(current)
+    if char == '1':
+      current = add(current, point)
+  return current
+
 def private_key_to_wif(private_key_hex):
-    extended = "80" + private_key_hex + "01"
-    checksum = hashlib.sha256(hashlib.sha256(bytes.fromhex(extended)).digest()).digest()[:4]
-    extended_checksum = extended + checksum.hex()
-    wif = base58.b58encode(bytes.fromhex(extended_checksum)).decode()
-    return wif
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Hash160 Public Key Function
+  extended = "80" + private_key_hex + "01"; checksum = hashlib.sha256(hashlib.sha256(bytes.fromhex(extended)).digest()).digest()[:4]; extended_checksum = extended + checksum.hex(); wif = base58.b58encode(bytes.fromhex(extended_checksum)).decode()
+  return wif
+
 def hash160(data):
-    # Convert hexadecimal string to byte sequence first
-    binary = bytes.fromhex(data)
+  binary = bytes.fromhex(data); sha256 = hashlib.sha256(binary).digest(); ripemd160 = RIPEMD160.new(); ripemd160.update(sha256); hash160_bytes = ripemd160.digest(); hash160_hex = hash160_bytes.hex()
+  return hash160_hex
 
-    # SHA-256
-    sha256 = hashlib.sha256(binary).digest()
-
-    # RIPEMD-160
-    ripemd160 = RIPEMD160.new()
-    ripemd160.update(sha256)
-    hash160_bytes = ripemd160.digest()
-
-    # Convert from byte sequence back to hexadecimal
-    hash160_hex = hash160_bytes.hex()
-
-    return hash160_hex
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Get user input for private key or generation option
+#= User Choice (1=User Input Key / 2=Gen. Key) ==
 choice = sys.argv[1]
 if choice == '1':
-    prvkeyhex = input()
-    if len(prvkeyhex) != 64:
-        print("Invalid private key length.")
-        exit()
+  prvkeyhex = input()
+  if len(prvkeyhex) != 64:
+    print("Invalid private key length."); exit()
 elif choice == '2':
-    # Generate a random 32-byte private key
-    prvkeybytes = secrets.token_bytes(32)
-    prvkeyhex = prvkeybytes.hex()
+  prvkeybytes = secrets.token_bytes(32); prvkeyhex = prvkeybytes.hex()
 else:
-    print("Invalid choice.")
-    exit()
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Convert private key to bytes
+  print("Invalid choice."); exit()
+
+#= PrivateKey to bytes ==========================
 prvkeybytes = bytes.fromhex(prvkeyhex)
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Generate public key from private key
-prvkeyint = int.from_bytes(prvkeybytes, byteorder="big")
-point = multiply(prvkeyint)
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Convert x and y values of the public key point to hexadecimal
-x = format(point['x'], '064x')
-y = format(point['y'], '064x')
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Compressed public key
-prefix = '02' if point['y'] % 2 == 0 else '03'
-pubkeyhex = prefix + x
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Hash160 of the public key
-pubkey_hash160 = hash160(pubkeyhex) # Step 1
-versioned_hash = '00' + pubkey_hash160  # Step 2
-checksum = hashlib.sha256(hashlib.sha256(bytes.fromhex(versioned_hash)).digest()).digest()[:4]  # Step 3
-final_address = versioned_hash + checksum.hex()  # Step 4
-public_address = base58.b58encode(bytes.fromhex(final_address)).decode()  # Step 5
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-# Convert Private Key to WIF
+
+#= PrivateKey To PublicKey ======================
+prvkeyint = int.from_bytes(prvkeybytes, byteorder="big"); point = multiply(prvkeyint)
+
+#= Pubic(x,y) to hex ============================
+x = format(point['x'], '064x'); y = format(point['y'], '064x')
+
+#= Compressed public key ========================
+prefix = '02' if point['y'] % 2 == 0 else '03'; pubkeyhex = prefix + x
+
+#= Hash160 of the public key ====================
+pubkey_hash160 = hash160(pubkeyhex); versioned_hash = '00' + pubkey_hash160; checksum = hashlib.sha256(hashlib.sha256(bytes.fromhex(versioned_hash)).digest()).digest()[:4]; final_address = versioned_hash + checksum.hex(); public_address = base58.b58encode(bytes.fromhex(final_address)).decode()
+
+#= Private Key to WIF ===========================
 wif = private_key_to_wif(prvkeyhex)
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-#  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
 
-
-# VARS
-# OLD CODE:   print(prvkeyhex, wif, pubkeyhex, pubkey_hash160, public_address, flush=True)
+#= VARS =========================================
 print(f"{prvkeyhex}|{wif}|{pubkeyhex}|{pubkey_hash160}|{public_address}", flush=True)
-
 PYEOF
 )
-# OLD CODE:   local output=$(python3 -c "$pycode" "$arg1"); read -r prvkeyhex wif pubkeyhex pubkey_hash160 public_address <<< "$output"
-local output=$(python3 -c "$pycode" "$arg1"); IFS='|' read -r prvkeyhex wif pubkeyhex pubkey_hash160 public_address <<< "$output"
-
+local output=$(python3 -c "$pycode" "$arg1") # RUN THE PYTHON CODE TO FETCH VARS
+IFS='|' read -r prvkeyhex wif pubkeyhex pubkey_hash160 public_address <<< "$output" # IMPORT THE VARS IN A MEANINGFUL WAY FOR BASH USE
 }
-# . - . - . - . - . - . - . - . - . - . - . - . - . -
+# == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+# == == == == == == == == == == == == == == == == == ==
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
-# . - . - . - . - . - . - . - . - . - . - . - . - . -
 crap() { read -n 1 -p '*ANY-KEY*'; echo; }
-# . - . - . - . - . - . - . - . - . - . - . - . - . -
 install_deps() { for i in "${deps_apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "$i is already installed."; fi; done; for i in "${deps_pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
-# . - . - . - . - . - . - . - . - . - . - . - . - . -
+# == == == == == == == == == == == == == == == == == ==
 savetofile() {
-#~~~~~~~~~~~~~~
-public_address_url="https://mempool.space/address/$public_address"
-echo 'saving.......'; touch $basexfile
-#~~~~~~~~~~~~~~
-echo -e "_______________________________________________________________________________________________________________________
-~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
-Private Key:
- $prvkeyhex
-WIF:
- $wif
-Public Key:
- $pubkeyhex
-Public Key Hash160:
- $pubkey_hash160
-Public Address:
- $public_address
-URL (Bal):
- $public_address_url
- . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-" >>$basexfile
-#~~~~~~~~~~~~~~
-qrencode -t ASCIIi $prvkeyhex >>$basexfile; echo -e "⬆️Private Key⬆️\n------------------------------------------------------------------------------" >>$basexfile
-qrencode -t ASCIIi "$wif" >>$basexfile; echo -e "⬆️WIF⬆️\n------------------------------------------------------------------------------" >>$basexfile
-qrencode -t ASCIIi "$pubkeyhex" >>$basexfile; echo -e "⬆️Public Key⬆️\n------------------------------------------------------------------------------" >>$basexfile
-qrencode -t ASCIIi "$pubkey_hash160" >>$basexfile; echo -e "⬆️Public Key Hash160⬆️\n------------------------------------------------------------------------------" >>$basexfile
-qrencode -t ASCIIi "$public_address" >>$basexfile; echo -e "⬆️Address⬆️\n------------------------------------------------------------------------------" >>$basexfile
-qrencode -t ASCIIi "$public_address_url" >>$basexfile; echo -e "⬆️URL (Bal)⬆️\n------------------------------------------------------------------------------" >>$basexfile
-#~~~~~~~~~~~~~~
-echo "**** Saved In File: $basexfile ****"
-#~~~~~~~~~~~~~~
+  local public_address_url="https://mempool.space/address/$public_address"; echo 'saving.......'; touch $basexfile
+  echo -e "############ $(date -u '+%Y-%m-%d %H:%M:%S') UTC     ||     $(date '+%Y-%m-%d %H:%M:%S') LOCAL #############\n" >>$basexfile
+  qrencode -t ASCIIi $prvkeyhex >>$basexfile; echo -e "\n⬆️Private Key⬆️\n" >>$basexfile
+  qrencode -t ASCIIi "$wif" >>$basexfile; echo -e "\n⬆️WIF⬆️\n" >>$basexfile
+  qrencode -t ASCIIi "$pubkeyhex" >>$basexfile; echo -e "\n⬆️Public Key⬆️\n" >>$basexfile
+  qrencode -t ASCIIi "$pubkey_hash160" >>$basexfile; echo -e "\n⬆️Public Key Hash160⬆️\n" >>$basexfile
+  qrencode -t ASCIIi "$public_address" >>$basexfile; echo -e "\n⬆️Address⬆️\n" >>$basexfile
+  qrencode -t ASCIIi "$public_address_url" >>$basexfile; echo -e "\n⬆️URL (Bal)⬆️\n" >>$basexfile
+  echo -e "Private Key:\n $prvkeyhex\n\nWIF:\n $wif\n\nPublic Key:\n $pubkeyhex\n\nPublic Key Hash160:\n $pubkey_hash160\n\nPublic Address:\n $public_address\n\nURL (Bal):\n $public_address_url\n\n" >>$basexfile
+  echo "**** Saved In File: $basexfile ****"
 }
-# . - . - . - . - . - . - . - . - . - . - . - . - . -
+# == == == == == == == == == == == == == == == == == ==
 showinterminal() {
-clear; echo
-#~~~~~~~~~~~~~~~~~
-public_address_url="https://mempool.space/address/$public_address"
-echo -n "$public_address_url" | xclip -selection clipboard
-#~~~~~~~~~~~~~~~~~
-echo -e "Private Key:
- $prvkeyhex
-WIF:
- $wif
-Public Key:
- $pubkeyhex
-Public Key Hash160:
- $pubkey_hash160
-Address:
- $public_address
-URL (Bal) [On Clipboard]:
- $public_address_url
- . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
-#~~~~~~~~~~~~~~~~~
-echo '=============== QR CODES =================='
-qrencode -t ASCIIi $prvkeyhex; echo -e "⬆️ Private Key⬆️\n------------------------------------------------------------------------------"
-qrencode -t ASCIIi "$wif"; echo -e "⬆️ WIF⬆️\n------------------------------------------------------------------------------"
-qrencode -t ASCIIi "$pubkeyhex"; echo -e "⬆️ Public Key⬆️\n------------------------------------------------------------------------------"
-qrencode -t ASCIIi "$pubkey_hash160"; echo -e "⬆️ Public Key Hash160⬆️\n------------------------------------------------------------------------------"
-qrencode -t ASCIIi "$public_address"; echo -e "⬆️ Address⬆️\n------------------------------------------------------------------------------"
-qrencode -t ASCIIi "$public_address_url"; echo -e "⬆️ URL (Bal)⬆️\n------------------------------------------------------------------------------"
-#~~~~~~~~~~~~~~~~~
+  clear; echo
+  #~~~~~~~~~~~~~~~~~
+  local public_address_url="https://mempool.space/address/$public_address"
+  echo -n "$public_address_url" | xclip -selection clipboard
+  #~~~~~~~~~~~~~~~~~
+  echo '=============== QR CODES =================='
+  qrencode -t ASCIIi $prvkeyhex; echo -e "\n⬆️ Private Key⬆️\n"
+  qrencode -t ASCIIi "$wif"; echo -e "\n⬆️ WIF⬆️\n"
+  qrencode -t ASCIIi "$pubkeyhex"; echo -e "\n⬆️ Public Key⬆️\n"
+  qrencode -t ASCIIi "$pubkey_hash160"; echo -e "\n⬆️ Public Key Hash160⬆️\n"
+  qrencode -t ASCIIi "$public_address"; echo -e "\n⬆️ Address⬆️\n"
+  qrencode -t ASCIIi "$public_address_url"; echo -e "\n⬆️ URL (Bal)⬆️\n"
+  #~~~~~~~~~~~~~~~~~
+  echo -e "Private Key:\n $prvkeyhex\n\nWIF:\n $wif\n\nPublic Key:\n $pubkeyhex\n\nPublic Key Hash160:\n $pubkey_hash160\n\nAddress:\n $public_address\n\nURL (Bal) [On Clipboard]:\n $public_address_url\n\n"
 }
-# . - . - . - . - . - . - . - . - . - . - . - . - . -
-hex_to_bin() { local hex=$1; for ((i=0; i<${#hex}; i++)); do case ${hex:$i:1} in 0) echo -n "0000" ;; 1) echo -n "0001" ;; 2) echo -n "0010" ;; 3) echo -n "0011" ;; 4) echo -n "0100" ;; 5) echo -n "0101" ;; 6) echo -n "0110" ;; 7) echo -n "0111" ;; 8) echo -n "1000" ;; 9) echo -n "1001" ;; [Aa]) echo -n "1010" ;; [Bb]) echo -n "1011" ;; [Cc]) echo -n "1100" ;; [Dd]) echo -n "1101" ;; [Ee]) echo -n "1110" ;; [Ff]) echo -n "1111" ;; esac; done; }
-# . - . - . - . - . - . - . - . - . - . - . - . - . -
+# == == == == == == == == == == == == == == == == == ==
 sha_256() { echo -n $1 | shasum -a 256 -0; }
-# . - . - . - . - . - . - . - . - . - . - . - . - . -
-bin_to_hex() { local bin="$1"; case "$bin" in 0000) echo -n "0" ;; 0001) echo -n "1" ;; 0010) echo -n "2" ;; 0011) echo -n "3" ;; 0100) echo -n "4" ;; 0101) echo -n "5" ;; 0110) echo -n "6" ;; 0111) echo -n "7" ;; 1000) echo -n "8" ;; 1001) echo -n "9" ;; 1010) echo -n "a" ;; 1011) echo -n "b" ;; 1100) echo -n "c" ;; 1101) echo -n "d" ;; 1110) echo -n "e" ;; 1111) echo -n "f" ;; *) echo "Invalid binary input: $bin"; return 1 ;; esac; }
-### FUNCTIONS for calc ##############################################
-  toclip() { echo -n "$1" | xclip -selection clipboard; }
-  hex2bin() { local hex=$1; for ((i=0; i<${#hex}; i++)); do case ${hex:$i:1} in 0) echo -n "0000" ;; 1) echo -n "0001" ;; 2) echo -n "0010" ;; 3) echo -n "0011" ;; 4) echo -n "0100" ;; 5) echo -n "0101" ;; 6) echo -n "0110" ;; 7) echo -n "0111" ;; 8) echo -n "1000" ;; 9) echo -n "1001" ;; [Aa]) echo -n "1010" ;; [Bb]) echo -n "1011" ;; [Cc]) echo -n "1100" ;; [Dd]) echo -n "1101" ;; [Ee]) echo -n "1110" ;; [Ff]) echo -n "1111" ;; esac; done; }
-  bin2dec() { local bin="$1"; local dec=""; dec=$(echo "ibase=2; $bin" | bc | tr -d '\n\\'); echo "$dec"; }
-  dec2hex() { local dec="$1"; local hex=""; hex=$(echo "ibase=10; obase=16; $dec" | bc); echo "${hex,,}"; }
-  hex2dec() { local hex="$1"; local bin=$(hex2bin "$hex"); local dec=$(bin2dec "$bin"); echo "$dec"; }
-  bin2hex() { local bin="$1" hex=""; while (( (i + ${#bin}) % 4 != 0 )); do bin="0$bin"; done; for ((i = 0; i < ${#bin}; i += 4)); do chunk="${bin:i:4}"; case "$chunk" in 0000) hex+="0" ;; 0001) hex+="1" ;; 0010) hex+="2" ;; 0011) hex+="3" ;; 0100) hex+="4" ;; 0101) hex+="5" ;; 0110) hex+="6" ;; 0111) hex+="7" ;; 1000) hex+="8" ;; 1001) hex+="9" ;; 1010) hex+="a" ;; 1011) hex+="b" ;; 1100) hex+="c" ;; 1101) hex+="d" ;; 1110) hex+="e" ;; 1111) hex+="f" ;; *) echo "Invalid binary input: $chunk"; return 1 ;; esac; done; echo "$hex"; }
-  dec2bin() { local dec="$1"; local hex=$(dec2hex "$dec"); local bin=$(hex2bin "$hex"); echo "$bin"; }
-
-wif2prv() {
-local IN="$1"
-local OUT
-# Decode from base58
-OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\')
-# Convert to lowercase (optional, but commonly done for consistency)
-OUT=${OUT,,}
-# Trim off the first 2 characters
-OUT=${OUT:2}
-# Crop to 64 characters from the beginning
-OUT=${OUT:0:64}
-echo "$OUT"
+toclip() { echo -n "$1" | xclip -selection clipboard; }
+# == == == == == == == == == == == == == == == == == ==
+hex2bin() {
+  local hex=$1
+  for ((i=0; i<${#hex}; i++)); do
+    case ${hex:$i:1} in
+      0) echo -n "0000" ;;
+      1) echo -n "0001" ;;
+      2) echo -n "0010" ;;
+      3) echo -n "0011" ;;
+      4) echo -n "0100" ;;
+      5) echo -n "0101" ;;
+      6) echo -n "0110" ;;
+      7) echo -n "0111" ;;
+      8) echo -n "1000" ;;
+      9) echo -n "1001" ;;
+      [Aa]) echo -n "1010" ;;
+      [Bb]) echo -n "1011" ;;
+      [Cc]) echo -n "1100" ;;
+      [Dd]) echo -n "1101" ;;
+      [Ee]) echo -n "1110" ;;
+      [Ff]) echo -n "1111" ;;
+    esac
+  done
 }
-
+# == == == == == == == == == == == == == == == == == ==
+bin2hex() {
+  local bin="$1"
+  local hex=""
+  while (( (i + ${#bin}) % 4 != 0 )); do bin="0$bin"; done
+  for ((i = 0; i < ${#bin}; i += 4)); do
+    chunk="${bin:i:4}"
+    case "$chunk" in
+      0000) hex+="0" ;;
+      0001) hex+="1" ;;
+      0010) hex+="2" ;;
+      0011) hex+="3" ;;
+      0100) hex+="4" ;;
+      0101) hex+="5" ;;
+      0110) hex+="6" ;;
+      0111) hex+="7" ;;
+      1000) hex+="8" ;;
+      1001) hex+="9" ;;
+      1010) hex+="a" ;;
+      1011) hex+="b" ;;
+      1100) hex+="c" ;;
+      1101) hex+="d" ;;
+      1110) hex+="e" ;;
+      1111) hex+="f" ;;
+      *) echo "Invalid binary input: $chunk"; return 1 ;;
+    esac
+  done
+  echo "$hex"
+}
+# == == == == == == == == == == == == == == == == == ==
+bin2dec() { local bin="$1"; local dec=""; dec=$(echo "ibase=2; $bin" | bc | tr -d '\n\\'); echo "$dec"; }
+dec2bin() { local dec="$1"; local hex=$(dec2hex "$dec"); local bin=$(hex2bin "$hex"); echo "$bin"; }
+dec2hex() { local dec="$1"; local hex=""; hex=$(echo "ibase=10; obase=16; $dec" | bc); echo "${hex,,}"; }
+hex2dec() { local hex="$1"; local bin=$(hex2bin "$hex"); local dec=$(bin2dec "$bin"); echo "$dec"; }
+# == == == == == == == == == == == == == == == == == ==
+wif2prv() {
+  local IN="$1"
+  local OUT
+  OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\') # Decode from base58
+  OUT=${OUT,,}
+  OUT=${OUT:2} # Trim off the first 2 characters
+  OUT=${OUT:0:64} # Crop to 64 characters from the beginning
+  echo "$OUT"
+}
+# == == == == == == == == == == == == == == == == == ==
 hex2b6() {
   local IN=$(echo "$1" | rev)
   local dec=$(hex2dec "$IN")
   local base6_number=$(echo "obase=6; $dec" | bc | tr -d '\n\\')
   echo "$base6_number"
 }
-
+# == == == == == == == == == == == == == == == == == ==
 b62hex() {
   local base6="$1"
   local result=$(echo "obase=16; ibase=6; $base6" | bc | tr -d '\n\\')
   result=${result,,}
   echo "$result"
 }
+# == == == == == == == == == == == == == == == == == ==
 dice() {
   local result=""
   local roll=""
@@ -257,15 +217,21 @@ dice() {
   echo "$result"
   dice_OUT="$result"
 }
+# == == == == == == == == == == == == == == == == == ==
 
-## VARS ###################################################
+#===========================================================================================================================
+#== VARS ===================================================================================================================
 basexfile="$HOME/Desktop/basex.txt"
 deps_apt=(python3-pip qrencode xclip) # FUTURE?: (base58 basez gnupg imagemagick oathtool openssl ruby-ascii85 tesseract-ocr zbar-tools)
 deps_pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
 file_numbers="/tmp/numbers.txt"
 file_phrase="/tmp/seed_phrase.txt"
 bitwords="$HOME/a-me/z-share/code/bitwords.txt"
+#== VARS END ===============================================================================================================
+#===========================================================================================================================
 
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ## MAIN MENU a ############################################
 mma:
 clear
@@ -284,6 +250,11 @@ echo '(\) EXIT'; read -rsn1 inkey; echo; inkey=${inkey,,}; clear; case "$inkey" 
 '5') jumpto mma5;;
 '6') jumpto mma6;;
 '\') exit 0;; *) jumpto mma;; esac; jumpto mmb
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ## MAIN MENU b ############################################
 mmb:
 clear
@@ -298,58 +269,28 @@ echo '(\) Back To Main Menu'; read -rsn1 inkey; echo; inkey=${inkey,,}; clear; c
 '3') savetofile;;
 '4') rm "$basexfile";;
 '\') jumpto mma;; *) jumpto mmb;; esac; crap; jumpto mmb
-#===========================================================================================================================
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma4:
-#~~begin~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-clear; echo -e "==== Welcome To Mnemonic Generator (work in progress / new feature) ====\n\nIT IS REQUIRED TO HAVE THE WORD LIST SAVED AT:\n"; echo -e "\t ~/a-me/z-share/code/bitwords.txt\n"; crap; clear
-#~~Get 64 char hex string as $nm1
-echo "Enter your 64-character hexadecimal key:"; read nm1
-#nm1='ef235aacf90d9f4aadd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2'
-#~~Convert $nm1 (64 char hex string) to binary as $nm2
-nm2=$(hex_to_bin $nm1)
-#~~Get sha256sum of $nm2 & only record the 1st two chars of the output as $nm3
-nm3=$(sha_256 $nm2 | awk '{print $1}' | cut -c1-2)
-#~~Convert $nm3 (our 2 chars of hex) to binary as $nm4
-nm4=$(hex_to_bin $nm3)
-#~~Append our $nm4 (this is the checksum) to $nm2 (orignal string in binary)
-nm5=$nm2$nm4 #this forms a binary that we can use to make our phrase
-#~~Split $nm5 into 11-bit groups & convert to numbers (which are output to $file_numbers)
-for (( i=0; i<${#nm5}; i+=11 )); do nm6=${nm5:$i:11}; echo $((2#${nm6})); done > "$file_numbers"
-#~~Convert our numbers from $file_numbers to words using $bitwords (wordlist) and output the result to $file_phrase
-while read line_number; do line_number=$((line_number + 1)); sed -n "${line_number}p" "$bitwords"; done < "$file_numbers" > "$file_phrase"
-#############################################
-#~~SHOW OUTPUTS~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-clear
-echo -e "Private Key (hex):\n $nm1"
-echo -e "Entropy (bin):\n $nm2"
-echo -e "Checksum:\n hex=$nm3\n bin=$nm4"
-echo -e "Entropy w/ Checksum (bin):\n $nm5"
-echo "==== Your seed phrase is ===="; cat "$file_phrase"
-echo -e "\nPLEASE RECORD THIS INFO MANUALLY\n IT WILL DISSAPPEAR WHEN YOU LEAVE\nHit Enter When Ready"; read junk; sleep .5
+  # INFO
+    clear; echo -e "===================== Welcome To Mnemonic Generator ====================================\n  FYI: (it is required to have the word list saved @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n[Enter your 64-character hexadecimal key]:"
+  # INPUT
+    read nm1 #~~Get 64 char hex string as $nm1
+  # CALC
+    nm2=$(hex2bin $nm1) #~~Convert $nm1 (64 char hex string) to binary as $nm2
+    nm3=$(sha_256 $nm2 | awk '{print $1}' | cut -c1-2) #~~Get sha256sum of $nm2 & only record the 1st two chars of the output as $nm3
+    nm4=$(hex2bin $nm3) #~~Convert $nm3 (our 2 chars of hex) to binary as $nm4
+    nm5=$nm2$nm4 #~~Append our $nm4 (this is the checksum) to $nm2 (orignal string in binary) | this forms a binary that we can use to make our phrase
+    for (( i=0; i<${#nm5}; i+=11 )); do nm6=${nm5:$i:11}; echo $((2#${nm6})); done > "$file_numbers" #~~Split $nm5 into 11-bit groups & convert to numbers (which are output to $file_numbers)
+    while read line_number; do line_number=$((line_number + 1)); sed -n "${line_number}p" "$bitwords"; done < "$file_numbers" > "$file_phrase" #~~Convert our numbers from $file_numbers to words using $bitwords (wordlist) and output the result to $file_phrase
+  # OUTPUT
+    clear; echo -e "Private Key (hex):\n $nm1\nEntropy (bin):\n $nm2\nChecksum:\n hex=$nm3\n bin=$nm4\nEntropy w/ Checksum (bin):\n $nm5\n==== Your seed phrase is ===="
+    cat "$file_phrase"
+    echo -e "\nPLEASE RECORD THIS INFO MANUALLY\n IT WILL DISSAPPEAR WHEN YOU LEAVE\nHit Enter When Ready"; read junk; sleep .5
 jumpto mma
-#===========================================================================================================================
-mma5:
-#~~begin~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-clear; echo -e "==== Welcome To Mnemonic 2 Private Key ======\n*IT IS REQUIRED TO HAVE THE WORD LIST SAVED AT*\n\t ~/a-me/z-share/code/bitwords.txt\n"; crap; clear
-#~~Get Seed Phrase as $jj1
-echo "Enter your 24 Word Phrase:"; read jj1
-#jj1='upset bracket private velvet supreme pipe resist bomb comic float flavor senior pact slogan sell vibrant photo portion annual attack original letter walnut equal'
-#~~take each word from $jj1 and find its line number in $bitwords and append that [line_number -1] to a string $jj2
-jj2=""; for word in $jj1; do line_number=$(grep -n -w "$word" "$bitwords" | cut -d: -f1); line_number=$((line_number - 1)); jj2+=$(printf "%011d" $(echo "obase=2;$line_number" | bc)); done
-#~~now trim the last 8 chars off of $jj2 as $jj3 (this removes the checksum)
-jj3=${jj2:0:-8}
-#~~convert $jj3 from binary to hex as $jj4
-jj4=""; for ((i = 0; i < ${#jj3}; i += 4)); do chunk="${jj3:i:4}"; hex_chunk=$(bin_to_hex "$chunk"); jj4="${jj4}${hex_chunk}"; done
-#############################################
-#~~SHOW OUTPUTS~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-clear
-echo -e "Seed Phrase:\n $jj1"
-echo -e "Entropy w/ Checksum (bin):\n $jj2"
-echo -e "Entropy no Checksum (bin):\n $jj3"
-echo -e "Private Key (hex):\n $jj4"
-echo -e "\nPLEASE RECORD THIS INFO MANUALLY\n IT WILL DISSAPPEAR WHEN YOU LEAVE\nHit Enter When Ready"; read junk; sleep .5
-jumpto mma
-#############
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 #=== example =================================================================
 #  ef235aacf90d9f4aadd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2
 #  1110111100100011010110101010110011111001000011011001111101001010101011011101100011001001001011100100101100100101011000101110000111011001111010111001011111110000110111111001101110100011101101010000100000100101100001110011100111001011000000010011110110110010
@@ -357,10 +298,31 @@ jumpto mma
 #  111011110010001101011010101011001111100100001101100111110100101010101101110110001100100100101110010010110010010101100010111000011101100111101011100101111111000011011111100110111010001110110101000010000010010110000111001110011100101100000001001111011011001001100000
 #  upset bracket private velvet supreme pipe resist bomb comic float flavor senior pact slogan sell vibrant photo portion annual attack original letter walnut equal
 #=============================================================================
-#
-#
 
-#===========================================================================================================================
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+mma5:
+  # INFO
+    clear; echo -e "===================== Welcome To Mnemonic 2 Private Key ================================\n  FYI: (it is required to have the word list saved @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n[Enter your 24 Word Phrase]:"
+  # INPUT
+    read jj1
+  # CALC
+    jj2=""
+    for word in $jj1; do
+      line_number=$(grep -n -w "$word" "$bitwords" | cut -d: -f1)
+      line_number=$((line_number - 1))
+      jj2+=$(printf "%011d" $(echo "obase=2;$line_number" | bc))
+    done
+    jj3=${jj2:0:-8} #~~trim the last 8 chars (this removes the checksum)
+    jj4=$(bin2hex "$jj3") #jj4=""; for ((i = 0; i < ${#jj3}; i += 4)); do chunk="${jj3:i:4}"; hex_chunk=$(bin_to_hex "$chunk"); jj4="${jj4}${hex_chunk}"; done
+  # OUTPUT
+    clear
+    echo -e "Seed Phrase:\n $jj1\nEntropy w/ Checksum (bin):\n $jj2\nEntropy no Checksum (bin):\n $jj3\nPrivate Key (hex):\n $jj4"
+    echo -e "\nPLEASE RECORD THIS INFO MANUALLY\n IT WILL DISSAPPEAR WHEN YOU LEAVE\nHit Enter When Ready"; read junk; sleep .5
+jumpto mma
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6:
   clear
   echo '== BASE Converter ==='
@@ -387,99 +349,163 @@ mma6:
   '9') jumpto mma6i ;;
   '0') jumpto mma6j ;;
   '\') jumpto mma;; *) jumpto mma6 ;; esac
-## SUBS ###################################################
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6a:
-  echo 'hex2bin: Enter Your Number'; read hex2bin_IN
-  echo '.............................'
-  hex2bin_OUT=$(hex2bin "$hex2bin_IN")
-  toclip "$hex2bin_OUT"
-  echo -e "hex2bin  (Length= ${#hex2bin_OUT})\n  $hex2bin_OUT\n\n* Results Available On ClipBoard *"
-  sleep .5
-  crap
+  # INFO
+    echo 'hex2bin: Enter Your Number'
+  # INPUT
+    read hex2bin_IN; echo '.............................'
+  # CALC
+    hex2bin_OUT=$(hex2bin "$hex2bin_IN")
+  # OUTPUT
+    toclip "$hex2bin_OUT"
+    echo -e "hex2bin  (Length= ${#hex2bin_OUT})\n  $hex2bin_OUT\n\n* Results Available On ClipBoard *"
+    sleep .5; crap
 jumpto mma6
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6b:
-  echo 'hex2dec: Enter Your Number'; read hex2dec_IN
-  hex2dec_OUT=$(hex2dec "$hex2dec_IN")
-  toclip "$hex2dec_OUT"
-  echo -e "hex2dec  (Length= ${#hex2dec_OUT})\n  $hex2dec_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+  # INFO
+    echo 'hex2dec: Enter Your Number'
+  # INPUT
+    read hex2dec_IN
+  # CALC
+    hex2dec_OUT=$(hex2dec "$hex2dec_IN")
+  # OUTPUT
+    toclip "$hex2dec_OUT"
+    echo -e "hex2dec  (Length= ${#hex2dec_OUT})\n  $hex2dec_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6c:
-  echo 'bin2hex: Enter Your Number'; read bin2hex_IN
-  bin2hex_OUT=$(bin2hex "$bin2hex_IN")
-  toclip "$bin2hex_OUT"
-  echo -e "bin2hex  (Length= ${#bin2hex_OUT})\n  $bin2hex_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+  # INFO
+    echo 'bin2hex: Enter Your Number'
+  # INPUT
+    read bin2hex_IN
+  # CALC
+    bin2hex_OUT=$(bin2hex "$bin2hex_IN")
+  # OUTPUT
+    toclip "$bin2hex_OUT"
+    echo -e "bin2hex  (Length= ${#bin2hex_OUT})\n  $bin2hex_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6d:
-  echo 'bin2dec: Enter Your Number'; read bin2dec_IN
-  bin2dec_OUT=$(bin2dec "$bin2dec_IN")
-  toclip "$bin2dec_OUT"
-  echo -e "bin2dec  (Length= ${#bin2dec_OUT})\n  $bin2dec_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+  # INFO
+    echo 'bin2dec: Enter Your Number'
+  # INPUT
+    read bin2dec_IN
+  # CALC
+    bin2dec_OUT=$(bin2dec "$bin2dec_IN")
+  # OUTPUT
+    toclip "$bin2dec_OUT"
+    echo -e "bin2dec  (Length= ${#bin2dec_OUT})\n  $bin2dec_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6e:
-  echo 'dec2hex: Enter Your Number'; read dec2hex_IN
-  dec2hex_OUT=$(dec2hex "$dec2hex_IN")
-  toclip "$dec2hex_OUT"
-  echo -e "dec2hex  (Length= ${#dec2hex_OUT})\n  $dec2hex_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+  # INFO
+    echo 'dec2hex: Enter Your Number'
+  # INPUT
+    read dec2hex_IN
+  # CALC
+    dec2hex_OUT=$(dec2hex "$dec2hex_IN")
+  # OUTPUT
+    toclip "$dec2hex_OUT"
+    echo -e "dec2hex  (Length= ${#dec2hex_OUT})\n  $dec2hex_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6f:
-  echo 'dec2bin: Enter Your Number'; read dec2bin_IN
-  dec2bin_OUT=$(dec2bin "$dec2bin_IN")
-  toclip "$dec2bin_OUT"
-  echo -e "dec2bin  (Length= ${#dec2bin_OUT})\n  $dec2bin_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+  # INFO
+    echo 'dec2bin: Enter Your Number'
+  # INPUT
+    read dec2bin_IN
+  # CALC
+    dec2bin_OUT=$(dec2bin "$dec2bin_IN")
+  # OUTPUT
+    toclip "$dec2bin_OUT"
+    echo -e "dec2bin  (Length= ${#dec2bin_OUT})\n  $dec2bin_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6g:
-  echo 'WIF 2 PRV (BASE58 WIF TO HEX PRIVATE KEY)'; read wif2prv_IN
-  wif2prv_OUT=$(wif2prv "$wif2prv_IN")
-  toclip "$wif2prv_OUT"
-  echo -e "WIF 2 PRV  (Length= ${#wif2prv_OUT})\n  $wif2prv_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+  # INFO
+    echo 'WIF 2 PRV (BASE58 WIF TO HEX PRIVATE KEY)'
+  # INPUT
+    read wif2prv_IN
+  # CALC
+    wif2prv_OUT=$(wif2prv "$wif2prv_IN")
+  # OUTPUT
+    toclip "$wif2prv_OUT"
+    echo -e "WIF 2 PRV  (Length= ${#wif2prv_OUT})\n  $wif2prv_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6h:
-  echo 'hex to b6'; read hex2b6_IN
-  hex2b6_OUT=$(hex2b6 "$hex2b6_IN")
-  toclip "$hex2b6_OUT"
-  echo -e "hex to b6 (Length= ${#hex2b6_OUT})\n  $hex2b6_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+  # INFO
+    echo 'hex to b6'
+  # INPUT
+    read hex2b6_IN
+  # CALC
+    hex2b6_OUT=$(hex2b6 "$hex2b6_IN")
+  # OUTPUT
+    toclip "$hex2b6_OUT"
+    echo -e "hex to b6 (Length= ${#hex2b6_OUT})\n  $hex2b6_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6i:
-  echo 'b6 to hex (use with dice too [6 on di is 0, 99 rolls]'; read b62hex_IN
-  b62hex_OUT=$(b62hex "$b62hex_IN")
-  toclip "$b62hex_OUT"
-  echo -e "b6 to hex (Length= ${#b62hex_OUT})\n  $b62hex_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+
+  # INFO
+    echo 'b6 to hex (use with dice too [6 on di is 0, 99 rolls]'
+  # INPUT
+    read b62hex_IN
+  # CALC
+    b62hex_OUT=$(b62hex "$b62hex_IN")
+    toclip "$b62hex_OUT"
+  # OUTPUT
+    echo -e "b6 to hex (Length= ${#b62hex_OUT})\n  $b62hex_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
-#----------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 mma6j:
-  clear
-  dice
-  toclip "$dice_OUT"
-  echo '----------------------------------------'
-  echo -e "Dice As Base 6 (Length= ${#dice_OUT})\n  $dice_OUT\n\n* Results Available On Clipboard *"
-  sleep .5
-  crap
+  # INFO / INPUT / CALC
+    clear; dice
+  # OUTPUT
+    toclip "$dice_OUT"
+    echo -e "\n----------------------------------------\nDice As Base 6 (Length= ${#dice_OUT})\n  $dice_OUT\n\n* Results Available On Clipboard *"
+    sleep .5; crap
 jumpto mma6  # Return to the main menu
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+#===========================================================================================================================
+#== SECTION ================================================================================================================
+#
+#== SECTION END ============================================================================================================
 #===========================================================================================================================
