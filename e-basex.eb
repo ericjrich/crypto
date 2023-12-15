@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#20231213_13:54_est--EJR
+#20231215_16:39_est--EJR
 #BaseX EJR (migrated from python to bash)
 #
 #== FUNCTIONS ==============================================================================================================
@@ -92,6 +92,25 @@ crap() { read -n 1 -p '*ANY-KEY*'; echo; }
 install_deps() { for i in "${deps_apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "$i is already installed."; fi; done; for i in "${deps_pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
 # == == == == == == == == == == == == == == == == == ==
 savetofile() {
+  touch "$file_numbers"; > "$file_numbers"
+  touch "$file_phrase"; > "$file_phrase"
+  local toline_number
+  local tonm1="$prvkeyhex" #~~Get 64 char hex string as $tonm1
+  local tonm2=$(hex2bin $tonm1) #~~Convert $tonm1 (64 char hex string) to binary as $tonm2
+  local tonm3=$(sha_256 $tonm2 | awk '{print $1}' | cut -c1-2) #~~Get sha256sum of $tonm2 & only record the 1st two chars of the output as $tonm3
+  local tonm4=$(hex2bin $tonm3) #~~Convert $tonm3 (our 2 chars of hex) to binary as $tonm4
+  local tonm5=$tonm2$tonm4 #~~Append our $tonm4 (this is the checksum) to $tonm2 (orignal string in binary) | this forms a binary that we can use to make our phrase
+  #~~Split $tonm5 into 11-bit groups & convert to numbers (which are output to $file_numbers)
+  for (( i=0; i<${#tonm5}; i+=11 )); do
+    tonm6=${tonm5:$i:11}
+    echo $((2#${tonm6}))
+  done > "$file_numbers"
+  #~~Convert our numbers from $file_numbers to words using $bitwords (wordlist) and output the result to $file_phrase
+  while read toline_number; do
+    toline_number=$((toline_number + 1))
+    sed -n "${toline_number}p" "$bitwords"
+  done < "$file_numbers" > "$file_phrase"
+#--------------------------------------------
   local public_address_url="https://mempool.space/address/$public_address"; echo 'saving.......'; touch $basexfile
   echo -e "############ $(date -u '+%Y-%m-%d %H:%M:%S') UTC     ||     $(date '+%Y-%m-%d %H:%M:%S') LOCAL #############\n" >>$basexfile
   qrencode -t ASCIIi $prvkeyhex >>$basexfile; echo -e "\n⬆️Private Key⬆️\n" >>$basexfile
@@ -100,13 +119,40 @@ savetofile() {
   qrencode -t ASCIIi "$pubkey_hash160" >>$basexfile; echo -e "\n⬆️Public Key Hash160⬆️\n" >>$basexfile
   qrencode -t ASCIIi "$public_address" >>$basexfile; echo -e "\n⬆️Address⬆️\n" >>$basexfile
   qrencode -t ASCIIi "$public_address_url" >>$basexfile; echo -e "\n⬆️URL (Bal)⬆️\n" >>$basexfile
-  echo -e "Private Key:\n $prvkeyhex\n\nWIF:\n $wif\n\nPublic Key:\n $pubkeyhex\n\nPublic Key Hash160:\n $pubkey_hash160\n\nPublic Address:\n $public_address\n\nURL (Bal):\n $public_address_url\n\n" >>$basexfile
+  echo -e "Private Key:\n $prvkeyhex\n\nWIF:\n $wif\n\nPublic Key:\n $pubkeyhex\n\nPublic Key Hash160:\n $pubkey_hash160\n\nPublic Address:\n $public_address\n\nURL (Bal):\n $public_address_url
+-----------------------------------------
+Entropy (bin):\n $tonm2
+Checksum:\n hex=$tonm3\n bin=$tonm4
+Entropy w/ Checksum (bin):\n $tonm5\n
+
+==== Your seed phrase is ====" >>$basexfile
+  cat "$file_phrase" >>$basexfile; echo '............................................' >>$basexfile
   echo "**** Saved In File: $basexfile ****"
 }
 # == == == == == == == == == == == == == == == == == ==
 showinterminal() {
   clear; echo
   #~~~~~~~~~~~~~~~~~
+  # vars & files
+  touch "$file_numbers"; > "$file_numbers"
+  touch "$file_phrase"; > "$file_phrase"
+  local toline_number
+  local tonm1="$prvkeyhex" #~~Get 64 char hex string as $tonm1
+  local tonm2=$(hex2bin $tonm1) #~~Convert $tonm1 (64 char hex string) to binary as $tonm2
+  local tonm3=$(sha_256 $tonm2 | awk '{print $1}' | cut -c1-2) #~~Get sha256sum of $tonm2 & only record the 1st two chars of the output as $tonm3
+  local tonm4=$(hex2bin $tonm3) #~~Convert $tonm3 (our 2 chars of hex) to binary as $tonm4
+  local tonm5=$tonm2$tonm4 #~~Append our $tonm4 (this is the checksum) to $tonm2 (orignal string in binary) | this forms a binary that we can use to make our phrase
+  #~~Split $tonm5 into 11-bit groups & convert to numbers (which are output to $file_numbers)
+  for (( i=0; i<${#tonm5}; i+=11 )); do
+    tonm6=${tonm5:$i:11}
+    echo $((2#${tonm6}))
+  done > "$file_numbers"
+  #~~Convert our numbers from $file_numbers to words using $bitwords (wordlist) and output the result to $file_phrase
+  while read toline_number; do
+    toline_number=$((toline_number + 1))
+    sed -n "${toline_number}p" "$bitwords"
+  done < "$file_numbers" > "$file_phrase"
+#-----------------------------------------------
   local public_address_url="https://mempool.space/address/$public_address"
   echo -n "$public_address_url" | xclip -selection clipboard
   #~~~~~~~~~~~~~~~~~
@@ -118,7 +164,14 @@ showinterminal() {
   qrencode -t ASCIIi "$public_address"; echo -e "\n⬆️ Address⬆️\n"
   qrencode -t ASCIIi "$public_address_url"; echo -e "\n⬆️ URL (Bal)⬆️\n"
   #~~~~~~~~~~~~~~~~~
-  echo -e "Private Key:\n $prvkeyhex\n\nWIF:\n $wif\n\nPublic Key:\n $pubkeyhex\n\nPublic Key Hash160:\n $pubkey_hash160\n\nAddress:\n $public_address\n\nURL (Bal) [On Clipboard]:\n $public_address_url\n\n"
+  echo -e "Private Key:\n $prvkeyhex\n\nWIF:\n $wif\n\nPublic Key:\n $pubkeyhex\n\nPublic Key Hash160:\n $pubkey_hash160\n\nAddress:\n $public_address\n\nURL (Bal) [On Clipboard]:\n $public_address_url
+-----------------------------------------
+Entropy (bin):\n $tonm2
+Checksum:\n hex=$tonm3\n bin=$tonm4
+Entropy w/ Checksum (bin):\n $tonm5\n
+
+==== Your seed phrase is ===="
+  cat "$file_phrase"; echo '............................................'
 }
 # == == == == == == == == == == == == == == == == == ==
 sha_256() { echo -n $1 | shasum -a 256 -0; }
