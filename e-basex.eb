@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20231218_23:29_est--EJR
+# 20231219_17:41_est--EJR
 #BaseX EJR: bitcoin calcs
 #``````````````````````````````````````````````````````````
 #_functions________________________________________________
@@ -88,6 +88,9 @@ crap() { read -n 1 -p '*ANY-KEY*'; echo; }
 GetDeps() { for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "You Have $i"; fi; done; for i in "${Dep_Pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
 toclip() { echo -n "$1" | xclip -selection clipboard; }
 #+++++++++++++++++++++++
+Encry() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -a -salt -pass pass:"$EnDePass" -pbkdf2); echo "$Out"; }
+Decry() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -d -a -pass pass:"$EnDePass" -pbkdf2); echo "$Out"; }
+#+++++++++++++++++++++++
 b62hex() { local base6="$1"; local result=$(echo "obase=16; ibase=6; $base6" | bc | tr -d '\n\\'); result=${result,,}; echo "$result"; }
 bin2dec() { local bin="$1"; local dec=""; dec=$(echo "ibase=2; $bin" | bc | tr -d '\n\\'); echo "$dec"; }
 bin2hex() { local bin="$1"; local hex=""; while (( (i + ${#bin}) % 4 != 0 )); do bin="0$bin"; done; for ((i = 0; i < ${#bin}; i += 4)); do chunk="${bin:i:4}"; case "$chunk" in 0000) hex+="0" ;; 0001) hex+="1" ;; 0010) hex+="2" ;; 0011) hex+="3" ;; 0100) hex+="4" ;; 0101) hex+="5" ;; 0110) hex+="6" ;; 0111) hex+="7" ;; 1000) hex+="8" ;; 1001) hex+="9" ;; 1010) hex+="a" ;; 1011) hex+="b" ;; 1100) hex+="c" ;; 1101) hex+="d" ;; 1110) hex+="e" ;; 1111) hex+="f" ;; *) echo "Invalid binary input: $chunk"; return 1 ;; esac; done; echo "$hex"; }
@@ -129,6 +132,13 @@ Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
 PhFN="/tmp/numbers.txt"
 PhF="/tmp/seed_phrase.txt"
 bitwords="$HOME/a-me/z-share/code/bitwords.txt"
+
+EnDeClip=""
+EnDePass=""
+EnIn=""
+EnMess=""
+DeIn=""
+DeMess=""
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
 mma:
@@ -139,6 +149,7 @@ echo '(3) Dependency Installer'
 echo '(4) Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..'
 echo '(5) Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..'
 echo '(0) Base Converter Calculators'
+echo '(-) En/Decrypt Messages'
 echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 ### CASES #########
 '1') echo 'Enter Prv Key:'; pf1 '1';;
@@ -147,6 +158,7 @@ echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" 
 '4') jumpto mma4;;
 '5') jumpto mma5;;
 '0') jumpto mma0;;
+'-') jumpto mmaq;;
 '\') exit 0;; *) jumpto mma;; esac; jumpto mmb
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
@@ -271,5 +283,49 @@ mma0k:
 echo 'Enter binary to be checksummed:'; read bin2sha256_IN; bin2sha256_OUT=$(Sha256 "$bin2sha256_IN"); toclip "$bin2sha256_OUT"; echo -e "Your Checmsum (Length= ${#bin2sha256_OUT})\n  $bin2sha256_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
 jumpto mma0
 #``````````````````````````````````````````````````````````
-#
-#
+
+#__________________________________________________________
+mmaq:
+clear
+echo "Current Password: $EnDePass"
+echo '== Message En/DeCrypter'
+echo ' 1 - Enter Password (run 1st)'
+echo ' 2 - Encrypt'
+echo ' 3 - Decrypt'
+echo ' 4 - Status'
+echo ' \ - Exit'
+read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
+### CASES #########
+'1') jumpto mmaq1 ;;
+'2') jumpto mmaq2 ;;
+'3') jumpto mmaq3 ;;
+'4') jumpto mmaq4 ;;
+'\') jumpto mma;; *) jumpto mmaq ;; esac
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmaq1:
+echo "Enter password:"; read -r EnDePass
+jumpto mmaq
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmaq2:
+echo "Enter Raw Message (Press Ctrl+D On New Line When Done):"; EnIn=""; while IFS= read -r line; do EnIn="${EnIn}${line}"$'\n'; done
+EnMess=$(Encry "$EnIn"); toclip "$EnMess"
+clear; echo -e "Encrypted Message (also on clipboard now):\n$EnMess"; crap
+jumpto mmaq
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmaq3:
+echo "What's the encrypted message you want to decode?"; read -r DeIn
+DeMess=$(Decry "$DeIn"); toclip "$DeMess"
+clear; echo -e "Decrypted Message (also on clipboard now):\n$DeMess"; crap
+jumpto mmaq
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmaq4:
+EnDeClip=$(xclip -o -selection clipboard); sleep .1; clear
+echo -e "=========Status Report From En/Decoder  ============\n\n----------Password----------------\n$EnDePass\n\n----------EnCrypt Input-----------\n$EnIn\n\n----------EnCrypt Output----------\n$EnMess\n\n----------DeCrypt Input-----------\n$DeIn\n\n----------DeCrypt Output----------\n$DeMess\n\n----------ClipBoard---------------\n$EnDeClip\n\n"
+sleep .1; crap
+jumpto mmaq
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
