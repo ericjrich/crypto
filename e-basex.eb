@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20231221_11:57_est--EJR
+# 20231221_13:07_est--EJR
 #BaseX EJR: bitcoin calcs
 #``````````````````````````````````````````````````````````
 #_functions________________________________________________
@@ -87,10 +87,11 @@ jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v '
 crap() { read -n 1 -p '*ANY-KEY*'; echo; }
 GetDeps() { for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "You Have $i"; fi; done; for i in "${Dep_Pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
 toclip() { echo -n "$1" | xclip -selection clipboard; }
-noWrap() { local input="$1"; echo "$input" | tr -d '\n'; }
 #+++++++++++++++++++++++
-Encry() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -a -salt -pass pass:"$EnDePass" -pbkdf2); echo "$Out"; }
-Decry() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -d -a -pass pass:"$EnDePass" -pbkdf2); echo "$Out"; }
+EncrySSL() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -a -salt -pass pass:"$EnDePass" -pbkdf2); echo -n "$Out"; }
+DecrySSL() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -d -a -pass pass:"$EnDePass" -pbkdf2); echo -n "$Out"; }
+Encry64() { local In="$1"; local Out=$(echo "$In" | base64); echo -n "$Out"; }
+Decry64() { local In="$1"; local Out=$(echo "$In" | base64 -d); echo -n "$Out"; }
 #+++++++++++++++++++++++
 b62hex() { local base6="$1"; local result=$(echo "obase=16; ibase=6; $base6" | bc | tr -d '\n\\'); result=${result,,}; echo "$result"; }
 bin2dec() { local bin="$1"; local dec=""; dec=$(echo "ibase=2; $bin" | bc | tr -d '\n\\'); echo "$dec"; }
@@ -136,10 +137,15 @@ bitwords="$HOME/a-me/z-share/code/bitwords.txt"
 
 EnDeClip=""
 EnDePass=""
-EnIn=""
-EnMess=""
-DeIn=""
-DeMess=""
+EnInSSL=""
+EnMessSSL=""
+DeInSSL=""
+DeMessSSL=""
+
+EnIn64=""
+EnMess64=""
+DeIn64=""
+DeMess64=""
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
 mma:
@@ -159,7 +165,7 @@ echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" 
 '4') jumpto mma4;;
 '5') jumpto mma5;;
 '0') jumpto mma0;;
-'-') jumpto mmaq;;
+'-') jumpto mmam;;
 '\') exit 0;; *) jumpto mma;; esac; jumpto mmb
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
@@ -226,7 +232,7 @@ echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" 
 '8') jumpto mma0h ;;
 '9') jumpto mma0i ;;
 '0') jumpto mma0j ;;
-'-') jumpto mma0k ;;
+'-') jumpto mma0m ;;
 '\') jumpto mma;; *) jumpto mma0 ;; esac
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
@@ -280,58 +286,111 @@ clear; dice; toclip "$dice_OUT"; echo -e "\n------------------------------------
 jumpto mma0
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
-mma0k:
+mma0m:
 echo 'Enter binary to be checksummed:'; read bin2sha256_IN; bin2sha256_OUT=$(Sha256 "$bin2sha256_IN"); toclip "$bin2sha256_OUT"; echo -e "Your Checmsum (Length= ${#bin2sha256_OUT})\n  $bin2sha256_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
 jumpto mma0
 #``````````````````````````````````````````````````````````
 
 #__________________________________________________________
-mmaq:
+mmam:
 clear
 echo "Current Password: $EnDePass"
 echo '== Message En/DeCrypter'
 echo ' 1 - Enter Password (run 1st)'
-echo ' 2 - Encrypt'
-echo ' 3 - Decrypt'
-echo ' 4 - Status'
+echo ' 2 - Encrypt (OpenSSL)'
+echo ' 3 - Decrypt (OpenSSL)'
+echo ' 4 - Encrypt (base64)'
+echo ' 5 - Decrypt (base64)'
+echo ' - - Status'
 echo ' \ - Exit'
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 ### CASES #########
-'1') jumpto mmaq1 ;;
-'2') jumpto mmaq2 ;;
-'3') jumpto mmaq3 ;;
-'4') jumpto mmaq4 ;;
-'\') jumpto mma;; *) jumpto mmaq ;; esac
+'1') jumpto mmam1 ;;
+'2') jumpto mmam2 ;;
+'3') jumpto mmam3 ;;
+'4') jumpto mmam4 ;;
+'5') jumpto mmam5 ;;
+'-') jumpto mmamm ;;
+'\') jumpto mma;; *) jumpto mmam ;; esac
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
-mmaq1:
-echo "Enter password:"; read -r EnDePass
-EnDePass=$(noWrap "$EnDePass")
-jumpto mmaq
+mmam1:
+EnDePass=""
+echo "Enter password:"
+read -r EnDePass; EnDePass=$(echo -n "$EnDePass")
+jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
-mmaq2:
-echo "Enter Raw Message (Press Ctrl+D On New Line When Done):"; EnIn=""; while IFS= read -r line; do EnIn="${EnIn}${line}"$'\n'; done
-EnMess=$(Encry "$EnIn")
-EnMess=$(noWrap "$EnMess")
-toclip "$EnMess"
-clear; echo -e "Encrypted Message (also on clipboard now):\n$EnMess"; crap
-jumpto mmaq
+mmam2:
+EnInSSL=""
+EnMessSSL=""
+echo "Enter Raw Message (Press Ctrl+D On New Line When Done):"
+while IFS= read -r line; do EnInSSL="${EnInSSL}${line}"$'\n'; done; EnInSSL=$(echo -n "$EnInSSL")
+EnMessSSL=$(EncrySSL "$EnInSSL"); toclip "$EnMessSSL"
+clear; echo -e "Encrypted Message (also on clipboard now):\n$EnMessSSL"; crap
+jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
-mmaq3:
-echo "What's the encrypted message you want to decode?"; read -r DeIn
-DeIn=$(noWrap "$DeIn")
-DeMess=$(Decry "$DeIn")
-toclip "$DeMess"
-clear; echo -e "Decrypted Message (also on clipboard now):\n$DeMess"; crap
-jumpto mmaq
+mmam3:
+DeInSSL=""
+DeMessSSL=""
+echo "What's the encrypted message you want to decode?"
+read -r DeInSSL; DeInSSL=$(echo -n "$DeInSSL")
+DeMessSSL=$(DecrySSL "$DeInSSL"); toclip "$DeMessSSL"
+clear; echo -e "Decrypted Message (also on clipboard now):\n$DeMessSSL"; crap
+jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
-mmaq4:
+mmam4:
+EnIn64=""
+EnMess64=""
+echo "Enter Raw Message (Press Ctrl+D On New Line When Done):"
+while IFS= read -r line; do EnIn64="${EnIn64}${line}"$'\n'; done; EnIn64=$(echo -n "$EnIn64")
+EnMess64=$(Encry64 "$EnIn64"); toclip "$EnMess64"
+clear; echo -e "Encryted Message (also on clipboard now):\n$EnMess64"; crap
+jumpto mmam
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmam5:
+DeIn64=""
+DeMess64=""
+echo "What's the encrypted message you want to decode?"
+read -r DeIn64; DeIn64=$(echo -n "$DeIn64")
+DeMess64=$(Decry64 "$DeIn64"); toclip "$DeMess64"
+clear; echo -e "Decrypted Message (also on clipboard now):\n$DeMess64"; crap
+jumpto mmam
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmamm:
 EnDeClip=$(xclip -o -selection clipboard); sleep .1; clear
-echo -e "=========Status Report From En/Decoder  ============\n\n----------Password----------------\n$EnDePass\n\n----------EnCrypt Input-----------\n$EnIn\n\n----------EnCrypt Output----------\n$EnMess\n\n----------DeCrypt Input-----------\n$DeIn\n\n----------DeCrypt Output----------\n$DeMess\n\n----------ClipBoard---------------\n$EnDeClip\n\n"
+echo -e "
+=========Status Report From En/Decoder  ============
+****EnCryptSSL Input****
+$EnInSSL
+****EnCryptSSL Output****
+$EnMessSSL
+****DeCryptSSL Input****
+$DeInSSL
+****DeCryptSSL Output****
+$DeMessSSL
+---------------------------------------
+****EnCrypt64 Input****
+$EnIn64
+****EnCrypt64 Output****
+$EnMess64
+****DeCrypt64 Input****
+$DeIn64
+****DeCrypt64 Output****
+$DeMess64
+---------------------------------------
+****Password****
+$EnDePass
+---------------------------------------
+****ClipBoard****
+$EnDeClip
+---------------------------------------
+"
 sleep .1; crap
-jumpto mmaq
+jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
