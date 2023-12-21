@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20231219_17:41_est--EJR
+# 20231221_11:57_est--EJR
 #BaseX EJR: bitcoin calcs
 #``````````````````````````````````````````````````````````
 #_functions________________________________________________
@@ -87,6 +87,7 @@ jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v '
 crap() { read -n 1 -p '*ANY-KEY*'; echo; }
 GetDeps() { for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "You Have $i"; fi; done; for i in "${Dep_Pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
 toclip() { echo -n "$1" | xclip -selection clipboard; }
+noWrap() { local input="$1"; echo "$input" | tr -d '\n'; }
 #+++++++++++++++++++++++
 Encry() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -a -salt -pass pass:"$EnDePass" -pbkdf2); echo "$Out"; }
 Decry() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -d -a -pass pass:"$EnDePass" -pbkdf2); echo "$Out"; }
@@ -305,19 +306,24 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 #__________________________________________________________
 mmaq1:
 echo "Enter password:"; read -r EnDePass
+EnDePass=$(noWrap "$EnDePass")
 jumpto mmaq
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
 mmaq2:
 echo "Enter Raw Message (Press Ctrl+D On New Line When Done):"; EnIn=""; while IFS= read -r line; do EnIn="${EnIn}${line}"$'\n'; done
-EnMess=$(Encry "$EnIn"); toclip "$EnMess"
+EnMess=$(Encry "$EnIn")
+EnMess=$(noWrap "$EnMess")
+toclip "$EnMess"
 clear; echo -e "Encrypted Message (also on clipboard now):\n$EnMess"; crap
 jumpto mmaq
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
 mmaq3:
 echo "What's the encrypted message you want to decode?"; read -r DeIn
-DeMess=$(Decry "$DeIn"); toclip "$DeMess"
+DeIn=$(noWrap "$DeIn")
+DeMess=$(Decry "$DeIn")
+toclip "$DeMess"
 clear; echo -e "Decrypted Message (also on clipboard now):\n$DeMess"; crap
 jumpto mmaq
 #``````````````````````````````````````````````````````````
