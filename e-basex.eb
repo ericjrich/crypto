@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20231221_13:07_est--EJR
+# 20231221_14:07_est--EJR
 #BaseX EJR: bitcoin calcs
 #``````````````````````````````````````````````````````````
 #_functions________________________________________________
@@ -87,6 +87,8 @@ jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v '
 crap() { read -n 1 -p '*ANY-KEY*'; echo; }
 GetDeps() { for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "You Have $i"; fi; done; for i in "${Dep_Pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
 toclip() { echo -n "$1" | xclip -selection clipboard; }
+makeclipQR() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; echo "$In1"; qrencode -t ANSIUTF8 "$In1"; }
+readclipQR() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "Decoded text from QR code:"; echo "$Out"; rm /tmp/clipboard.png; }
 #+++++++++++++++++++++++
 EncrySSL() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -a -salt -pass pass:"$EnDePass" -pbkdf2); echo -n "$Out"; }
 DecrySSL() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -d -a -pass pass:"$EnDePass" -pbkdf2); echo -n "$Out"; }
@@ -301,6 +303,8 @@ echo ' 2 - Encrypt (OpenSSL)'
 echo ' 3 - Decrypt (OpenSSL)'
 echo ' 4 - Encrypt (base64)'
 echo ' 5 - Decrypt (base64)'
+echo ' 9 - Make Clip QR'
+echo ' 0 - Read Clip QR'
 echo ' - - Status'
 echo ' \ - Exit'
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
@@ -310,6 +314,8 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '3') jumpto mmam3 ;;
 '4') jumpto mmam4 ;;
 '5') jumpto mmam5 ;;
+'9') jumpto mmam9 ;;
+'0') jumpto mmam0 ;;
 '-') jumpto mmamm ;;
 '\') jumpto mma;; *) jumpto mmam ;; esac
 #``````````````````````````````````````````````````````````
@@ -358,6 +364,16 @@ echo "What's the encrypted message you want to decode?"
 read -r DeIn64; DeIn64=$(echo -n "$DeIn64")
 DeMess64=$(Decry64 "$DeIn64"); toclip "$DeMess64"
 clear; echo -e "Decrypted Message (also on clipboard now):\n$DeMess64"; crap
+jumpto mmam
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmam9:
+makeclipQR; crap
+jumpto mmam
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmam0:
+readclipQR; crap
 jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
