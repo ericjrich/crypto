@@ -94,6 +94,9 @@ EncrySSL() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -a -sal
 DecrySSL() { local In="$1"; local Out=$(echo "$In" | openssl aes-256-cbc -d -a -pass pass:"$EnDePass" -pbkdf2); echo -n "$Out"; }
 Encry64() { local In="$1"; local Out=$(echo "$In" | base64); echo -n "$Out"; }
 Decry64() { local In="$1"; local Out=$(echo "$In" | base64 -d); echo -n "$Out"; }
+hex2ascii() { local In="$1"; In=${In,,}; In=$(echo $In | sed 's/ //g'); local Out=$(echo -n "$In" | xxd -r -p); echo "$Out"; }
+ascii2hex() { local In="$1"; local Out=$(echo -n "$In" | xxd -p | tr -d '\n'); echo "$Out"; }
+
 #+++++++++++++++++++++++
 b62hex() { local base6="$1"; local result=$(echo "obase=16; ibase=6; $base6" | bc | tr -d '\n\\'); result=${result,,}; echo "$result"; }
 bin2dec() { local bin="$1"; local dec=""; dec=$(echo "ibase=2; $bin" | bc | tr -d '\n\\'); echo "$dec"; }
@@ -148,6 +151,12 @@ EnIn64=""
 EnMess64=""
 DeIn64=""
 DeMess64=""
+
+hex2ascii_IN=""
+hex2ascii_OUT=""
+ascii2hex_IN=""
+ascii2hex_OUT=""
+
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
 mma:
@@ -303,6 +312,8 @@ echo ' 2 - Encrypt (OpenSSL)'
 echo ' 3 - Decrypt (OpenSSL)'
 echo ' 4 - Encrypt (base64)'
 echo ' 5 - Decrypt (base64)'
+echo ' 6 - hex2ascii'
+echo ' 7 - ascii2hex'
 echo ' 9 - Make Clip QR'
 echo ' 0 - Read Clip QR'
 echo ' - - Status'
@@ -314,6 +325,8 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '3') jumpto mmam3 ;;
 '4') jumpto mmam4 ;;
 '5') jumpto mmam5 ;;
+'6') jumpto mmam6 ;;
+'7') jumpto mmam7 ;;
 '9') jumpto mmam9 ;;
 '0') jumpto mmam0 ;;
 '-') jumpto mmamm ;;
@@ -322,7 +335,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 #__________________________________________________________
 mmam1:
 EnDePass=""
-echo "Enter password:"
+echo -e "Enter password:"
 read -r EnDePass; EnDePass=$(echo -n "$EnDePass")
 jumpto mmam
 #``````````````````````````````````````````````````````````
@@ -330,40 +343,60 @@ jumpto mmam
 mmam2:
 EnInSSL=""
 EnMessSSL=""
-echo "Enter Raw Message (Press Ctrl+D On New Line When Done):"
+echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"
 while IFS= read -r line; do EnInSSL="${EnInSSL}${line}"$'\n'; done; EnInSSL=$(echo -n "$EnInSSL")
 EnMessSSL=$(EncrySSL "$EnInSSL"); toclip "$EnMessSSL"
-clear; echo -e "Encrypted Message (also on clipboard now):\n$EnMessSSL"; crap
+clear; echo -e "Encrypted Message (also on clipboard now):\n\n$EnMessSSL"; crap
 jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
 mmam3:
 DeInSSL=""
 DeMessSSL=""
-echo "What's the encrypted message you want to decode?"
+echo -e "What's the encrypted message you want to decode?"
 read -r DeInSSL; DeInSSL=$(echo -n "$DeInSSL")
 DeMessSSL=$(DecrySSL "$DeInSSL"); toclip "$DeMessSSL"
-clear; echo -e "Decrypted Message (also on clipboard now):\n$DeMessSSL"; crap
+clear; echo -e "Decrypted Message (also on clipboard now):\n\n$DeMessSSL"; crap
 jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
 mmam4:
 EnIn64=""
 EnMess64=""
-echo "Enter Raw Message (Press Ctrl+D On New Line When Done):"
+echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"
 while IFS= read -r line; do EnIn64="${EnIn64}${line}"$'\n'; done; EnIn64=$(echo -n "$EnIn64")
 EnMess64=$(Encry64 "$EnIn64"); toclip "$EnMess64"
-clear; echo -e "Encryted Message (also on clipboard now):\n$EnMess64"; crap
+clear; echo -e "Encryted Message (also on clipboard now):\n\n$EnMess64"; crap
 jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
 mmam5:
 DeIn64=""
 DeMess64=""
-echo "What's the encrypted message you want to decode?"
+echo -e "What's the encrypted message you want to decode?"
 read -r DeIn64; DeIn64=$(echo -n "$DeIn64")
 DeMess64=$(Decry64 "$DeIn64"); toclip "$DeMess64"
-clear; echo -e "Decrypted Message (also on clipboard now):\n$DeMess64"; crap
+clear; echo -e "Decrypted Message (also on clipboard now):\n\n$DeMess64"; crap
+jumpto mmam
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmam6:
+hex2ascii_IN=""
+hex2ascii_OUT=""
+echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"
+while IFS= read -r line; do hex2ascii_IN="${hex2ascii_IN}${line}"$'\n'; done; hex2ascii_IN=$(echo -n "$hex2ascii_IN")
+hex2ascii_OUT=$(hex2ascii "$hex2ascii_IN"); toclip "$hex2ascii_OUT"
+clear; echo -e "Encryted Message (also on clipboard now):\n\n$hex2ascii_OUT"; crap
+jumpto mmam
+#``````````````````````````````````````````````````````````
+#__________________________________________________________
+mmam7:
+ascii2hex_IN=""
+ascii2hex_OUT=""
+echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"
+while IFS= read -r line; do ascii2hex_IN="${ascii2hex_IN}${line}"$'\n'; done; ascii2hex_IN=$(echo -n "$ascii2hex_IN")
+ascii2hex_OUT=$(ascii2hex "$ascii2hex_IN"); toclip "$ascii2hex_OUT"
+clear; echo -e "Decryted Message (also on clipboard now):\n\n$ascii2hex_OUT"; crap
 jumpto mmam
 #``````````````````````````````````````````````````````````
 #__________________________________________________________
