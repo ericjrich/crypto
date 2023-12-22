@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# 20231222_11:49_est--EJR
+# 20231222_12:51_est--EJR
 #BaseX EJR: bitcoin calcs
-#``````````````````````````````````````````````````````````
-#_functions________________________________________________
+#== FUNCTION ==============================================
 pf1() {
 local Pycode_IN="$1"; local Pycode_SRC=$(cat <<'PYEOF'
 #!/usr/bin/env python3
@@ -84,7 +83,7 @@ IFS='|' read -r PvKHex wif PbKHex PbKh160 PbAddr <<< "$pycode_OUT"
 }
 #+++++++++++++++++++++++
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
-crap() { read -n 1 -p '*ANY-KEY*'; echo; }
+crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
 GetDeps() { for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "You Have $i"; fi; done; for i in "${Dep_Pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
 toclip() { echo -n "$1" | xclip -selection clipboard; }
 makeclipQR() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; echo "$In1"; qrencode -t ANSIUTF8 "$In1"; }
@@ -96,7 +95,6 @@ txt2b64() { local In="$1"; local Out=$(echo -n "$In" | base64); echo -n "$Out"; 
 b642txt() { local In="$1"; local Out=$(echo -n "$In" | base64 -d); echo -n "$Out"; }
 hex2txt() { local In="$1"; In=${In,,}; In=$(echo -n $In | sed 's/ //g'); local Out=$(echo -n "$In" | xxd -r -p); echo -n "$Out"; }
 txt2hex() { local In="$1"; local Out=$(echo -n "$In" | xxd -p | tr -d '\n'); echo -n "$Out"; }
-
 #+++++++++++++++++++++++
 b62hex() { local base6="$1"; local result=$(echo "obase=16; ibase=6; $base6" | bc | tr -d '\n\\'); result=${result,,}; echo -n "$result"; }
 bin2dec() { local bin="$1"; local dec=""; dec=$(echo "ibase=2; $bin" | bc | tr -d '\n\\'); echo -n "$dec"; }
@@ -110,29 +108,90 @@ hex2dec() { local hex="$1"; local bin=$(hex2bin "$hex"); local dec=$(bin2dec "$b
 Sha256() { echo -n $1 | shasum -a 256 -0 | tr -d '\n\\'; }
 wif2prv() { local IN="$1"; local OUT; OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\'); OUT=${OUT,,}; OUT=${OUT:2}; OUT=${OUT:0:64}; echo -n "$OUT"; }
 #+++++++++++++++++++++++
-ToLog() { clear; echo; touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"
-  local Tl1="$PvKHex"; local Tl2=$(hex2bin $Tl1); local Tl3=$(Sha256 $Tl2 | awk '{print $1}' | cut -c1-2); local Tl4=$(hex2bin $Tl3); local Tl5=$Tl2$Tl4
-  for (( i=0; i<${#Tl5}; i+=11 )); do Tl6=${Tl5:$i:11}; echo $((2#${Tl6})); done > "$PhFN"
-  while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
+ToLog() {
+  clear
+  echo
+  touch "$PhFN"
+  > "$PhFN"
+  touch "$PhF"
+  > "$PhF"
+  local PhLN
+  local PbAddrUrl="https://mempool.space/address/$PbAddr"
+  local Tl1="$PvKHex"
+  local Tl2=$(hex2bin $Tl1)
+  local Tl3=$(Sha256 $Tl2 | awk '{print $1}' | cut -c1-2)
+  local Tl4=$(hex2bin $Tl3)
+  local Tl5=$Tl2$Tl4
+
+  for (( i=0; i<${#Tl5}; i+=11 )); do
+    Tl6=${Tl5:$i:11}
+    echo $((2#${Tl6}))
+  done > "$PhFN"
+
+  while read PhLN; do
+    PhLN=$((PhLN + 1))
+    sed -n "${PhLN}p" "$bitwords"
+  done < "$PhFN" > "$PhF"
+
   local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
-  echo 'saving.......'; touch $logF
+
+  echo 'saving.......'
+  touch $logF
+
   echo -e "=== $(date -u '+%Y-%m-%d %H:%M:%S') UTC === $(date '+%Y-%m-%d %H:%M:%S') LocalTime ===\n" >>$logF
+
   local TlData=("Private Key: $PvKHex" "WIF: $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
-  for i in "${TlData[@]}"; do qrencode -t ASCIIi "$i" >>$logF; echo -e "\n⬆️ ${i%%:*}⬆️\n" >>$logF; done
+
+  for i in "${TlData[@]}"; do
+    qrencode -t ASCIIi "$i" >>$logF
+    echo -e "\n⬆️ ${i%%:*}⬆️\n" >>$logF
+  done
+
   echo -e "Prv Key:\n $PvKHex\n\nWIF:\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nPub Addrs:\n $PbAddr\n\nURL (Bal):\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tl2\nChecksum:\n hex=$Tl3\n bin=$Tl4\nEntropy w/ Checksum (bin):\n $Tl5\n\n==== Your seed phrase is ====\n$PhStr\n............................................" >>$logF
-  echo "**** Saved In File: $logF ****"; }
+
+  echo "**** Saved In File: $logF ****"
+}
+
 #+++++++++++++++++++++++
-ToTerm() { clear; echo; touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"; toclip "$PbAddrUrl"
-  local Tt1="$PvKHex"; local Tt2=$(hex2bin $Tt1); local Tt3=$(Sha256 $Tt2 | awk '{print $1}' | cut -c1-2); local Tt4=$(hex2bin $Tt3); local Tt5=$Tt2$Tt4
-  for (( i=0; i<${#Tt5}; i+=11 )); do Tt6=${Tt5:$i:11}; echo $((2#${Tt6})); done > "$PhFN"
-  while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
+ToTerm() {
+  clear
+  echo
+  touch "$PhFN"
+  > "$PhFN"
+  touch "$PhF"
+  > "$PhF"
+  local PhLN
+  local PbAddrUrl="https://mempool.space/address/$PbAddr"
+  toclip "$PbAddrUrl"
+  local Tt1="$PvKHex"
+  local Tt2=$(hex2bin $Tt1)
+  local Tt3=$(Sha256 $Tt2 | awk '{print $1}' | cut -c1-2)
+  local Tt4=$(hex2bin $Tt3)
+  local Tt5=$Tt2$Tt4
+
+  for (( i=0; i<${#Tt5}; i+=11 )); do
+    Tt6=${Tt5:$i:11}
+    echo $((2#${Tt6}))
+  done > "$PhFN"
+
+  while read PhLN; do
+    PhLN=$((PhLN + 1))
+    sed -n "${PhLN}p" "$bitwords"
+  done < "$PhFN" > "$PhF"
+
   local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
+
   echo '=============== QR CODES =================='
   local TtData=("Private Key: $PvKHex" "WIF: $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
-  for i in "${TtData[@]}"; do qrencode -t ASCIIi "$i"; echo -e "\n⬆️ ${i%%:*}⬆️\n"; done
-  echo -e "Prv Key:\n $PvKHex\n\nWIF:\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nAddrs:\n $PbAddr\n\nURL (Bal) [On Clipboard]:\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tt2\nChecksum:\n hex=$Tt3\n bin=$Tt4\nEntropy w/ Checksum (bin):\n $Tt5\n\n==== Your seed phrase is ====\n$PhStr\n............................................"; }
-#``````````````````````````````````````````````````````````
-#__vars____________________________________________________
+
+  for i in "${TtData[@]}"; do
+    qrencode -t ASCIIi "$i"
+    echo -e "\n⬆️ ${i%%:*}⬆️\n"
+  done
+
+  echo -e "Prv Key:\n $PvKHex\n\nWIF:\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nAddrs:\n $PbAddr\n\nURL (Bal) [On Clipboard]:\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tt2\nChecksum:\n hex=$Tt3\n bin=$Tt4\nEntropy w/ Checksum (bin):\n $Tt5\n\n==== Your seed phrase is ====\n$PhStr\n............................................"
+}
+#== VARS ==================================================
 logF="$HOME/Desktop/basex.txt"
 Dep_Apt=(python3-pip qrencode xclip) # FUTURE?: (base58 basez gnupg imagemagick oathtool openssl ruby-ascii85 tesseract-ocr zbar-tools)
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
@@ -290,8 +349,9 @@ Das_Tables=$(cat <<'AsciiEOF'
  127    |  7F    |  0111 1111  |  ?    |  177    |  DEL (Delete)
 AsciiEOF
 )
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# M E N U :  M M A
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma:
 clear
 echo '(1) Enter Prv Key'
@@ -311,8 +371,7 @@ echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" 
 '0') jumpto mma0;;
 '-') jumpto mmam;;
 '\') exit 0;; *) jumpto mma;; esac; jumpto mmb
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmb:
 clear
 echo '(1) See Output'
@@ -326,30 +385,96 @@ echo '(\) Back To Main Menu'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; c
 '3') ToLog;;
 '4') rm "$logF";;
 '\') jumpto mma;; *) jumpto mmb;; esac; crap; jumpto mmb
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma4:
-clear; echo -e "==== PrvKey 2 Mnemonic ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\nEnter Hex Key:"
-read Pv2Mn1; Pv2Mn2=$(hex2bin $Pv2Mn1); if [ ${#Pv2Mn1} -eq 64 ]; then Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print $1}' | cut -c1-2)
-elif [ ${#Pv2Mn1} -eq 32 ]; then Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print substr($1,1,1)}'); else clear; echo 'Issue In Hex Length'; sleep 2; jumpto mma; fi
-Pv2Mn4=$(hex2bin $Pv2Mn3); Pv2Mn5=$Pv2Mn2$Pv2Mn4; for (( i=0; i<${#Pv2Mn5}; i+=11 )); do Pv2Mn6=${Pv2Mn5:$i:11}; echo $((2#${Pv2Mn6})); done > "$PhFN"
-while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"; PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//'); toclip "$PhStr"
-clear; echo -e "Prv Key (hex):\n $Pv2Mn1\nEntropy (bin):\n $Pv2Mn2\nChecksum:\n hex=$Pv2Mn3\n bin=$Pv2Mn4\nEntropy w/ Checksum (bin):\n $Pv2Mn5\n==== Your seed phrase (On ClipBoard Too)====\n $PhStr"
-echo -e "\nPLEASE RECORD THIS INFO MANUALLY\n IT WILL DISSAPPEAR WHEN YOU LEAVE\nHit Enter When Ready"; read junk; sleep .5
+clear
+echo '==== PrvKey 2 Mnemonic ===='
+echo '  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt'
+echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+echo 'Enter Hex Key:'
+read Pv2Mn1
+Pv2Mn2=$(hex2bin $Pv2Mn1)
+
+if [ ${#Pv2Mn1} -eq 64 ]; then
+  Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print $1}' | cut -c1-2)
+elif [ ${#Pv2Mn1} -eq 32 ]; then
+  Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print substr($1,1,1)}')
+else
+  clear
+  echo 'Issue In Hex Length'
+  sleep 2
+  jumpto mma
+fi
+
+Pv2Mn4=$(hex2bin $Pv2Mn3)
+Pv2Mn5=$Pv2Mn2$Pv2Mn4
+
+for (( i=0; i<${#Pv2Mn5}; i+=11 )); do
+  Pv2Mn6=${Pv2Mn5:$i:11}
+  echo $((2#${Pv2Mn6}))
+done > "$PhFN"
+
+while read PhLN; do
+  PhLN=$((PhLN + 1))
+  sed -n "${PhLN}p" "$bitwords"
+done < "$PhFN" > "$PhF"
+
+PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
+toclip "$PhStr"
+
+clear
+echo -e "Prv Key (hex):\n $Pv2Mn1"
+echo -e "Entropy (bin):\n $Pv2Mn2"
+echo -e "Checksum:\n hex=$Pv2Mn3\n bin=$Pv2Mn4"
+echo -e "Entropy w/ Checksum (bin):\n $Pv2Mn5"
+echo -e "==== Your seed phrase (On ClipBoard Too) ===="
+echo -e "$PhStr"
+echo -e "Hit Enter When Ready"
+read junk
 jumpto mma
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma5:
-clear; echo -e "==== Mnemonic 2 PrvKey ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\nEnter Phrase:"
-read Mn2Pv1; Mn2Pv2=""
-for word in $Mn2Pv1; do PhLN=$(grep -n -w "$word" "$bitwords" | cut -d: -f1); PhLN=$((PhLN - 1)); Mn2Pv2+=$(printf "%011d" $(echo "obase=2;$PhLN" | bc)); done
-if [ ${#Mn2Pv2} -eq 264 ]; then Mn2Pv3="${Mn2Pv2:0:-8}"; elif [ ${#Mn2Pv2} -eq 132 ]; then Mn2Pv3="${Mn2Pv2:0:-4}"; else clear; echo 'Length issue with words'; sleep 2; jumpto mma; fi
-Mn2Pv4=$(bin2hex "$Mn2Pv3"); toclip "$Mn2Pv4"; clear
-echo -e "Seed Phrase:\n $Mn2Pv1\nEntropy w/ Checksum (bin):\n $Mn2Pv2\nEntropy no Checksum (bin):\n $Mn2Pv3\nPrv Key in hex (length= ${#Mn2Pv4}):\n $Mn2Pv4  <== [On Clipboard]"
-echo -e "\nPLEASE RECORD THIS INFO MANUALLY\n IT WILL DISSAPPEAR WHEN YOU LEAVE\nHit Enter When Ready"; read junk; sleep .5
+clear
+echo -e "==== Mnemonic 2 PrvKey ===="
+echo "  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo -e "\nEnter Phrase:"
+read Mn2Pv1
+Mn2Pv2=""
+
+for word in $Mn2Pv1; do
+    PhLN=$(grep -n -w "$word" "$bitwords" | cut -d: -f1)
+    PhLN=$((PhLN - 1))
+    Mn2Pv2+=$(printf "%011d" $(echo "obase=2;$PhLN" | bc))
+done
+
+if [ ${#Mn2Pv2} -eq 264 ]; then
+    Mn2Pv3="${Mn2Pv2:0:-8}"
+elif [ ${#Mn2Pv2} -eq 132 ]; then
+    Mn2Pv3="${Mn2Pv2:0:-4}"
+else
+    clear
+    echo 'Length issue with words'
+    sleep 2
+    jumpto mma
+fi
+
+Mn2Pv4=$(bin2hex "$Mn2Pv3")
+toclip "$Mn2Pv4"
+clear
+
+echo -e "Seed Phrase:\n $Mn2Pv1"
+echo -e "Entropy w/ Checksum (bin):\n $Mn2Pv2"
+echo -e "Entropy no Checksum (bin):\n $Mn2Pv3"
+echo -e "Prv Key in hex (length= ${#Mn2Pv4}):\n $Mn2Pv4  <== [On Clipboard]"
+echo -e "\nPLEASE RECORD THIS INFO MANUALLY"
+echo "IT WILL DISAPPEAR WHEN YOU LEAVE"
+echo "Hit Enter When Ready"
+read junk
 jumpto mma
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# M E N U :  M M A 0
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma0:
 clear
 echo '== BASE Converter ==='
@@ -393,103 +518,251 @@ echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" 
 't') jumpto mma0t ;;
 
 '\') jumpto mma;; *) jumpto mma0 ;; esac
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma01:
-hex2bin_IN=""; hex2bin_OUT=""
-echo 'hex2bin: Enter Your Number'; read -r hex2bin_IN; hex2bin_IN=$(echo -n "$hex2bin_IN"); echo '.............................'; hex2bin_OUT=$(hex2bin "$hex2bin_IN"); toclip "$hex2bin_OUT"; echo -e "hex2bin  (Length= ${#hex2bin_OUT})\n  $hex2bin_OUT\n\n* Results Available On ClipBoard *"; sleep .5; crap
+hex2bin_IN=""
+hex2bin_OUT=""
+
+echo 'hex2bin: Enter Your Number'
+read -r hex2bin_IN
+hex2bin_IN=$(echo -n "$hex2bin_IN")
+
+echo '.............................'
+hex2bin_OUT=$(hex2bin "$hex2bin_IN")
+toclip "$hex2bin_OUT"
+
+echo -e "hex2bin  (Length= ${#hex2bin_OUT})\n  $hex2bin_OUT\n\n* Results Available On ClipBoard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma02:
-hex2dec_IN=""; hex2dec_OUT=""
-echo 'hex2dec: Enter Your Number'; read -r hex2dec_IN; hex2dec_IN=$(echo -n "$hex2dec_IN"); hex2dec_OUT=$(hex2dec "$hex2dec_IN"); toclip "$hex2dec_OUT"; echo -e "hex2dec  (Length= ${#hex2dec_OUT})\n  $hex2dec_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+hex2dec_IN=""
+hex2dec_OUT=""
+
+echo 'hex2dec: Enter Your Number'
+read -r hex2dec_IN
+hex2dec_IN=$(echo -n "$hex2dec_IN")
+
+hex2dec_OUT=$(hex2dec "$hex2dec_IN")
+toclip "$hex2dec_OUT"
+
+echo -e "hex2dec  (Length= ${#hex2dec_OUT})\n  $hex2dec_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma03:
-bin2hex_IN=""; bin2hex_OUT=""
-echo 'bin2hex: Enter Your Number'; read -r bin2hex_IN; bin2hex_IN=$(echo -n "$bin2hex_IN"); bin2hex_OUT=$(bin2hex "$bin2hex_IN"); toclip "$bin2hex_OUT"; echo -e "bin2hex  (Length= ${#bin2hex_OUT})\n  $bin2hex_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+bin2hex_IN=""
+bin2hex_OUT=""
+
+echo 'bin2hex: Enter Your Number'
+read -r bin2hex_IN
+bin2hex_IN=$(echo -n "$bin2hex_IN")
+
+bin2hex_OUT=$(bin2hex "$bin2hex_IN")
+toclip "$bin2hex_OUT"
+
+echo -e "bin2hex  (Length= ${#bin2hex_OUT})\n  $bin2hex_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma04:
-bin2dec_IN=""; bin2dec_OUT=""
-echo 'bin2dec: Enter Your Number'; read -r bin2dec_IN; bin2dec_IN=$(echo -n "$bin2dec_IN"); bin2dec_OUT=$(bin2dec "$bin2dec_IN"); toclip "$bin2dec_OUT"; echo -e "bin2dec  (Length= ${#bin2dec_OUT})\n  $bin2dec_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+bin2dec_IN=""
+bin2dec_OUT=""
+
+echo 'bin2dec: Enter Your Number'
+read -r bin2dec_IN
+bin2dec_IN=$(echo -n "$bin2dec_IN")
+
+bin2dec_OUT=$(bin2dec "$bin2dec_IN")
+toclip "$bin2dec_OUT"
+
+echo -e "bin2dec  (Length= ${#bin2dec_OUT})\n  $bin2dec_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma05:
-dec2hex_IN=""; dec2hex_OUT=""
-echo 'dec2hex: Enter Your Number'; read -r dec2hex_IN; dec2hex_IN=$(echo -n "$dec2hex_IN"); dec2hex_OUT=$(dec2hex "$dec2hex_IN"); toclip "$dec2hex_OUT"; echo -e "dec2hex  (Length= ${#dec2hex_OUT})\n  $dec2hex_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+dec2hex_IN=""
+dec2hex_OUT=""
+
+echo 'dec2hex: Enter Your Number'
+read -r dec2hex_IN
+dec2hex_IN=$(echo -n "$dec2hex_IN")
+
+dec2hex_OUT=$(dec2hex "$dec2hex_IN")
+toclip "$dec2hex_OUT"
+
+echo -e "dec2hex  (Length= ${#dec2hex_OUT})\n  $dec2hex_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma06:
-dec2bin_IN=""; dec2bin_OUT=""
-echo 'dec2bin: Enter Your Number'; read -r dec2bin_IN; dec2bin_IN=$(echo -n "$dec2bin_IN"); dec2bin_OUT=$(dec2bin "$dec2bin_IN"); toclip "$dec2bin_OUT"; echo -e "dec2bin  (Length= ${#dec2bin_OUT})\n  $dec2bin_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+dec2bin_IN=""
+dec2bin_OUT=""
+
+echo 'dec2bin: Enter Your Number'
+read -r dec2bin_IN
+dec2bin_IN=$(echo -n "$dec2bin_IN")
+
+dec2bin_OUT=$(dec2bin "$dec2bin_IN")
+toclip "$dec2bin_OUT"
+
+echo -e "dec2bin  (Length= ${#dec2bin_OUT})\n  $dec2bin_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma07:
-txt2b64_IN=""; txt2b64_OUT=""
-echo 'TXT 2 B64: Enter Your Number'; read txt2b64_IN; txt2b64_IN=$(echo -n "$txt2b64_IN"); txt2b64_OUT=$(txt2b64 "$txt2b64_IN"); toclip "$txt2b64_OUT"; echo -e "txt2b64  (Length= ${#txt2b64_OUT})\n  $txt2b64_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+txt2b64_IN=""
+txt2b64_OUT=""
+
+echo 'TXT 2 B64: Enter Your Text'
+read -r txt2b64_IN
+txt2b64_IN=$(echo -n "$txt2b64_IN")
+
+txt2b64_OUT=$(txt2b64 "$txt2b64_IN")
+toclip "$txt2b64_OUT"
+
+echo -e "txt2b64  (Length= ${#txt2b64_OUT})\n  $txt2b64_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma08:
-b642txt_IN=""; b642txt_OUT=""
-echo 'B64 2 TXT: Enter Your Number'; read -r b642txt_IN; b642txt_IN=$(echo -n "$b642txt_IN"); b642txt_OUT=$(b642txt "$b642txt_IN"); toclip "$b642txt_OUT"; echo -e "b642txt  (Length= ${#b642txt_OUT})\n  $b642txt_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+b642txt_IN=""
+b642txt_OUT=""
+
+echo 'B64 2 TXT: Enter Your Text'
+read -r b642txt_IN
+b642txt_IN=$(echo -n "$b642txt_IN")
+
+b642txt_OUT=$(b642txt "$b642txt_IN")
+toclip "$b642txt_OUT"
+
+echo -e "b642txt  (Length= ${#b642txt_OUT})\n  $b642txt_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma09:
-txt2hex_IN=""; txt2hex_OUT=""
-echo 'TXT 2 HEX: Enter Your Number'; read -r txt2hex_IN; txt2hex_IN=$(echo -n "$txt2hex_IN"); txt2hex_OUT=$(txt2hex "$txt2hex_IN"); toclip "$txt2hex_OUT"; echo -e "txt2hex  (Length= ${#txt2hex_OUT})\n  $txt2hex_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+txt2hex_IN=""
+txt2hex_OUT=""
+
+echo 'TXT 2 HEX: Enter Your Text'
+read -r txt2hex_IN
+txt2hex_IN=$(echo -n "$txt2hex_IN")
+
+txt2hex_OUT=$(txt2hex "$txt2hex_IN")
+toclip "$txt2hex_OUT"
+
+echo -e "txt2hex  (Length= ${#txt2hex_OUT})\n  $txt2hex_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma00:
-hex2txt_IN=""; hex2txt_OUT=""
-echo 'HEX 2 TXT: Enter Your Number'; read -r hex2txt_IN; hex2txt_IN=$(echo -n "$hex2txt_IN"); hex2txt_OUT=$(hex2txt "$hex2txt_IN"); toclip "$hex2txt_OUT"; echo -e "hex2txt  (Length= ${#hex2txt_OUT})\n  $hex2txt_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
+hex2txt_IN=""
+hex2txt_OUT=""
+
+echo 'HEX 2 TXT: Enter Your Text'
+read -r hex2txt_IN
+hex2txt_IN=$(echo -n "$hex2txt_IN")
+
+hex2txt_OUT=$(hex2txt "$hex2txt_IN")
+toclip "$hex2txt_OUT"
+
+echo -e "hex2txt  (Length= ${#hex2txt_OUT})\n  $hex2txt_OUT\n\n* Results Available On Clipboard *"
+crap
+
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma0m:
 jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma0q:
-wif2prv_IN=""; wif2prv_OUT=""
-echo 'WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)'; read -r wif2prv_IN; wif2prv_IN=$(echo -n "$wif2prv_IN"); wif2prv_OUT=$(wif2prv "$wif2prv_IN"); toclip "$wif2prv_OUT"; echo -e "WIF 2 PRV  (Length= ${#wif2prv_OUT})\n  $wif2prv_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
-jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
-mma0w:
-hex2b6_IN=""; hex2b6_OUT=""
-echo 'hex to b6'; read -r hex2b6_IN; hex2b6_IN=$(echo -n "$hex2b6_IN"); hex2b6_OUT=$(hex2b6 "$hex2b6_IN"); toclip "$hex2b6_OUT"; echo -e "hex to b6 (Length= ${#hex2b6_OUT})\n  $hex2b6_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
-jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
-mma0e:
-b62hex_IN=""; b62hex_OUT=""
-echo 'b6 to hex (use with dice too [6 on di is 0, 99 rolls]'; read -r b62hex_IN; b62hex_IN=$(echo -n "$b62hex_IN"); b62hex_OUT=$(b62hex "$b62hex_IN"); toclip "$b62hex_OUT"; echo -e "b6 to hex (Length= ${#b62hex_OUT})\n  $b62hex_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
-jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
-mma0r:
-dice_IN=""; dice_OUT=""
-clear; dice; toclip "$dice_OUT"; echo -e "\n----------------------------------------\nDice As Base 6 (Length= ${#dice_OUT})\n  $dice_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
-jumpto mma0
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
-mma0t:
-bin2sha256_IN=""; bin2sha256_OUT=""
-echo 'Enter binary to be checksummed:'; read -r bin2sha256_IN; bin2sha256_IN=$(echo -n "$bin2sha256_IN"); bin2sha256_OUT=$(Sha256 "$bin2sha256_IN"); toclip "$bin2sha256_OUT"; echo -e "Your Checmsum (Length= ${#bin2sha256_OUT})\n  $bin2sha256_OUT\n\n* Results Available On Clipboard *"; sleep .5; crap
-jumpto mma0
-#``````````````````````````````````````````````````````````
+wif2prv_IN=""
+wif2prv_OUT=""
 
-#__________________________________________________________
+echo 'WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)'
+read -r wif2prv_IN
+wif2prv_IN=$(echo -n "$wif2prv_IN")
+
+wif2prv_OUT=$(wif2prv "$wif2prv_IN")
+toclip "$wif2prv_OUT"
+
+echo -e "WIF 2 PRV  (Length= ${#wif2prv_OUT})\n  $wif2prv_OUT\n\n* Results Available On Clipboard *"
+crap
+
+jumpto mma0
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mma0w:
+hex2b6_IN=""
+hex2b6_OUT=""
+
+echo 'hex to b6'
+read -r hex2b6_IN
+hex2b6_IN=$(echo -n "$hex2b6_IN")
+
+hex2b6_OUT=$(hex2b6 "$hex2b6_IN")
+toclip "$hex2b6_OUT"
+
+echo -e "hex to b6 (Length= ${#hex2b6_OUT})\n  $hex2b6_OUT\n\n* Results Available On Clipboard *"
+crap
+
+jumpto mma0
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mma0e:
+b62hex_IN=""
+b62hex_OUT=""
+
+echo 'b6 to hex (use with dice too [6 on di is 0, 99 rolls]'
+read -r b62hex_IN
+b62hex_IN=$(echo -n "$b62hex_IN")
+
+b62hex_OUT=$(b62hex "$b62hex_IN")
+toclip "$b62hex_OUT"
+
+echo -e "b6 to hex (Length= ${#b62hex_OUT})\n  $b62hex_OUT\n\n* Results Available On Clipboard *"
+crap
+
+jumpto mma0
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mma0r:
+dice_IN=""
+dice_OUT=""
+
+clear
+dice
+toclip "$dice_OUT"
+
+echo -e "\n----------------------------------------\nDice As Base 6 (Length= ${#dice_OUT})\n  $dice_OUT\n\n* Results Available On Clipboard *"
+crap
+
+jumpto mma0
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mma0t:
+bin2sha256_IN=""
+bin2sha256_OUT=""
+
+echo 'Enter binary to be checksummed:'
+read -r bin2sha256_IN
+bin2sha256_IN=$(echo -n "$bin2sha256_IN")
+
+bin2sha256_OUT=$(Sha256 "$bin2sha256_IN")
+toclip "$bin2sha256_OUT"
+
+echo -e "Your Checmsum (Length= ${#bin2sha256_OUT})\n  $bin2sha256_OUT\n\n* Results Available On Clipboard *"
+crap
+
+jumpto mma0
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# M E N U :  M M A M
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam:
 clear
 echo "Current Password: $EncMsgPass"
@@ -520,93 +793,149 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '0') jumpto mmam0 ;;
 '-') jumpto mmamm ;;
 '\') jumpto mma;; *) jumpto mmam ;; esac
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam1:
 EncMsgPass=""
+
 echo -e "Enter password:"
-read -r EncMsgPass; EncMsgPass=$(echo -n "$EncMsgPass")
+read -r EncMsgPass
+EncMsgPass=$(echo -n "$EncMsgPass")
+
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam2:
 txt2ssl_IN=""
 txt2ssl_OUT=""
+
 echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"
-while IFS= read -r line; do txt2ssl_IN="${txt2ssl_IN}${line}"$'\n'; done; txt2ssl_IN=$(echo -n "$txt2ssl_IN")
-txt2ssl_OUT=$(txt2ssl "$txt2ssl_IN"); toclip "$txt2ssl_OUT"
-clear; echo -e "Encrypted Message (also on clipboard now):\n\n$txt2ssl_OUT"; crap
+
+while IFS= read -r line; do
+  txt2ssl_IN="${txt2ssl_IN}${line}"$'\n'
+done
+
+txt2ssl_IN=$(echo -n "$txt2ssl_IN")
+txt2ssl_OUT=$(txt2ssl "$txt2ssl_IN")
+toclip "$txt2ssl_OUT"
+
+clear
+echo -e "Encrypted Message (also on clipboard now):\n\n$txt2ssl_OUT"
+crap
+
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam3:
 ssl2txt_IN=""
 ssl2txt_OUT=""
+
 echo -e "What's the encrypted message you want to decode?"
-read -r ssl2txt_IN; ssl2txt_IN=$(echo -n "$ssl2txt_IN")
-ssl2txt_OUT=$(ssl2txt "$ssl2txt_IN"); toclip "$ssl2txt_OUT"
-clear; echo -e "Decrypted Message (also on clipboard now):\n\n$ssl2txt_OUT"; crap
+read -r ssl2txt_IN
+ssl2txt_IN=$(echo -n "$ssl2txt_IN")
+
+ssl2txt_OUT=$(ssl2txt "$ssl2txt_IN")
+toclip "$ssl2txt_OUT"
+
+clear
+echo -e "Decrypted Message (also on clipboard now):\n\n$ssl2txt_OUT"
+crap
+
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam4:
 txt2b64_IN=""
 txt2b64_OUT=""
+
 echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"
-while IFS= read -r line; do txt2b64_IN="${txt2b64_IN}${line}"$'\n'; done; txt2b64_IN=$(echo -n "$txt2b64_IN")
-txt2b64_OUT=$(txt2b64 "$txt2b64_IN"); toclip "$txt2b64_OUT"
-clear; echo -e "Encryted Message (also on clipboard now):\n\n$txt2b64_OUT"; crap
+
+while IFS= read -r line; do
+  txt2b64_IN="${txt2b64_IN}${line}"$'\n'
+done
+
+txt2b64_IN=$(echo -n "$txt2b64_IN")
+txt2b64_OUT=$(txt2b64 "$txt2b64_IN")
+toclip "$txt2b64_OUT"
+
+clear
+echo -e "Encrypted Message (also on clipboard now):\n\n$txt2b64_OUT"
+crap
+
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam5:
 b642txt_IN=""
 b642txt_OUT=""
+
 echo -e "What's the encrypted message you want to decode?"
-read -r b642txt_IN; b642txt_IN=$(echo -n "$b642txt_IN")
-b642txt_OUT=$(b642txt "$b642txt_IN"); toclip "$b642txt_OUT"
-clear; echo -e "Decrypted Message (also on clipboard now):\n\n$b642txt_OUT"; crap
+read -r b642txt_IN
+b642txt_IN=$(echo -n "$b642txt_IN")
+
+b642txt_OUT=$(b642txt "$b642txt_IN")
+toclip "$b642txt_OUT"
+
+clear
+echo -e "Decrypted Message (also on clipboard now):\n\n$b642txt_OUT"
+crap
+
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam6:
 txt2hex_IN=""
 txt2hex_OUT=""
+
 echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"
-while IFS= read -r line; do txt2hex_IN="${txt2hex_IN}${line}"$'\n'; done; txt2hex_IN=$(echo -n "$txt2hex_IN")
-txt2hex_OUT=$(txt2hex "$txt2hex_IN"); toclip "$txt2hex_OUT"
-clear; echo -e "Decryted Message (also on clipboard now):\n\n$txt2hex_OUT"; crap
+
+while IFS= read -r line; do
+  txt2hex_IN="${txt2hex_IN}${line}"$'\n'
+done
+
+txt2hex_IN=$(echo -n "$txt2hex_IN")
+txt2hex_OUT=$(txt2hex "$txt2hex_IN")
+toclip "$txt2hex_OUT"
+
+clear
+echo -e "Decrypted Message (also on clipboard now):\n\n$txt2hex_OUT"
+crap
+
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam7:
 hex2txt_IN=""
 hex2txt_OUT=""
+
 echo -e "Enter Hex Message (Press Ctrl+D On New Line When Done):"
-while IFS= read -r line; do hex2txt_IN="${hex2txt_IN}${line}"$'\n'; done; hex2txt_IN=$(echo -n "$hex2txt_IN")
-hex2txt_OUT=$(hex2txt "$hex2txt_IN"); toclip "$hex2txt_OUT"
-clear; echo -e "Encryted Message (also on clipboard now):\n\n$hex2txt_OUT"; crap
+
+while IFS= read -r line; do
+  hex2txt_IN="${hex2txt_IN}${line}"$'\n'
+done
+
+hex2txt_IN=$(echo -n "$hex2txt_IN")
+hex2txt_OUT=$(hex2txt "$hex2txt_IN")
+toclip "$hex2txt_OUT"
+
+clear
+echo -e "Encrypted Message (also on clipboard now):\n\n$hex2txt_OUT"
+crap
+
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam8:
 echo "$Das_Tables"
 crap
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam9:
-makeclipQR; crap
+makeclipQR
+crap
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam0:
-readclipQR; crap
+readclipQR
+crap
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmamm:
-EncMsgClip=$(xclip -o -selection clipboard); sleep .1; clear
+EncMsgClip=$(xclip -o -selection clipboard)
+sleep .1
+clear
 echo -e "
 =========Status Report From En/Decoder  ============
 ****Password****
@@ -643,7 +972,6 @@ $hex2txt_OUT
 $EncMsgClip
 ---------------------------------------
 "
-sleep .1; crap
+crap
 jumpto mmam
-#``````````````````````````````````````````````````````````
-#__________________________________________________________
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
