@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# 20231222_13:19_est--EJR
+# 20231222_13:50_est--EJR
 #BaseX EJR: bitcoin calcs
+
 #== FUNCTION ==============================================
 pf1() {
 local Pycode_IN="$1"; local Pycode_SRC=$(cat <<'PYEOF'
@@ -193,8 +194,8 @@ ToTerm() {
 }
 #== VARS ==================================================
 logF="$HOME/Desktop/basex.txt"
-Dep_Apt=(python3-pip qrencode xclip) # FUTURE?: (base58 basez gnupg imagemagick oathtool openssl ruby-ascii85 tesseract-ocr zbar-tools)
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
+Dep_Apt=(python3 minimodem base58 basez dc gnupg hashalot oathtool openssl qrencode ruby-ascii85 tesseract-ocr zbar-tools espeak festival flite imagemagick feh figlet python3-pip whiptail xclip yad zenity)
 PhFN="/tmp/numbers.txt"
 PhF="/tmp/seed_phrase.txt"
 bitwords="$HOME/a-me/z-share/code/bitwords.txt"
@@ -536,7 +537,7 @@ echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" 
 '4') jumpto mma4;;
 '5') jumpto mma5;;
 '0') jumpto mma0;;
-'n') echo "$humanrights"; crap;;
+'n') echo "$humanrights"; toclip "$humanrights"; crap;;
 '-') jumpto mmam;;
 '\') exit 0;; *) jumpto mma;; esac; jumpto mma
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
