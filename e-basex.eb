@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20231222_13:50_est--EJR
+# 20231222_14:30_est--EJR
 #BaseX EJR: bitcoin calcs
 
 #== FUNCTION ==============================================
@@ -528,7 +528,8 @@ echo '(4) Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..'
 echo '(5) Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..'
 echo '(0) Base Converter Calculators'
 echo '(-) En/Decrypt Messages'
-echo '(N) Universal Declaration of Human Rights'
+echo '(q) Speak Clipboard'
+echo '(n) Universal Declaration of Human Rights'
 echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 ### CASES #########
 '1') echo 'Enter Prv Key:'; pf1 '1'; jumpto mmb;;
@@ -537,6 +538,7 @@ echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" 
 '4') jumpto mma4;;
 '5') jumpto mma5;;
 '0') jumpto mma0;;
+'q') SayClip=$(xclip -o -selection clipboard); echo -e "==== Reading The Clipboard ====\n$SayClip"; echo "$SayClip" | festival --tts; crap;;
 'n') echo "$humanrights"; toclip "$humanrights"; crap;;
 '-') jumpto mmam;;
 '\') exit 0;; *) jumpto mma;; esac; jumpto mma
