@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# 20231222_17:26_est--EJR
+# 20231222_17:39_est--EJR
 #BaseX EJR: bitcoin calcs
 
 #== FUNCTION ==============================================
-pf1() {
-local Pycode_IN="$1"; local Pycode_SRC=$(cat <<'PYEOF'
+pf1() { local Pycode_IN="$1"; local Pycode_SRC=$(cat <<'PYEOF'
 #!/usr/bin/env python3
 import os, pyperclip, hashlib, base58, secrets, qrcode, subprocess, sys
 from Crypto.Hash import RIPEMD160
