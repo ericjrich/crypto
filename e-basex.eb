@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20231222_14:30_est--EJR
+# 20231222_17:26_est--EJR
 #BaseX EJR: bitcoin calcs
 
 #== FUNCTION ==============================================
@@ -521,17 +521,19 @@ AsciiEOF
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma:
 clear
-echo '(1) Enter Prv Key'
-echo '(2) Generate New Prv Key'
-echo '(3) Dependency Installer'
-echo '(4) Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..'
-echo '(5) Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..'
-echo '(0) Base Converter Calculators'
-echo '(-) En/Decrypt Messages'
-echo '(q) Speak Clipboard'
-echo '(n) Universal Declaration of Human Rights'
-echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
+echo -e "=== Main Menu =====================
+ 1 | Enter Prv Key
+ 2 | Generate New Prv Key
+ 3 | Dependency Installer
+ 4 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..
+ 5 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..
+ 0 | Base Converter Calculators
+ - | En/Decrypt Messages
+ q | Speak Clipboard
+ n | Universal Declaration of Human Rights
+ \ | EXIT"
 ### CASES #########
+read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') echo 'Enter Prv Key:'; pf1 '1'; jumpto mmb;;
 '2') pf1 '2'; jumpto mmb;;
 '3') GetDeps; crap;;
@@ -545,12 +547,14 @@ echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmb:
 clear
-echo '(1) See Output'
-echo "(2) See Output AND Save To $logF"
-echo "(3) Just Save To $logF"
-echo "(4) Delete $logF"
-echo '(\) Back To Main Menu'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
+echo -e "== Crypto After Gen. Menu ==
+ 1 | See Output
+ 2 | See Output AND Save To $logF
+ 3 | Just Save To $logF
+ 4 | Delete $logF
+ \ | Back To Main Menu"
 ### CASES #########
+read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') ToTerm;;
 '2') ToLog; ToTerm;;
 '3') ToLog;;
@@ -559,10 +563,10 @@ echo '(\) Back To Main Menu'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; c
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma4:
 clear
-echo '==== PrvKey 2 Mnemonic ===='
-echo '  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt'
-echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-echo 'Enter Hex Key:'
+echo -e "==== PrvKey 2 Mnemonic ====
+  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Enter Hex Key:"
 read Pv2Mn1
 Pv2Mn2=$(hex2bin $Pv2Mn1)
 
@@ -594,22 +598,22 @@ PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
 toclip "$PhStr"
 
 clear
-echo -e "Prv Key (hex):\n $Pv2Mn1"
-echo -e "Entropy (bin):\n $Pv2Mn2"
-echo -e "Checksum:\n hex=$Pv2Mn3\n bin=$Pv2Mn4"
-echo -e "Entropy w/ Checksum (bin):\n $Pv2Mn5"
-echo -e "==== Your seed phrase (On ClipBoard Too) ===="
-echo -e "$PhStr"
-echo -e "Hit Enter When Ready"
+echo -e "Prv Key (hex):\n $Pv2Mn1
+Entropy (bin):\n $Pv2Mn2
+Checksum:\n hex=$Pv2Mn3\n bin=$Pv2Mn4
+Entropy w/ Checksum (bin):\n $Pv2Mn5
+==== Your seed phrase (On ClipBoard Too) ====
+$PhStr
+Hit Enter When Ready"
 read junk
 jumpto mma
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma5:
 clear
-echo -e "==== Mnemonic 2 PrvKey ===="
-echo "  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt"
-echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-echo -e "\nEnter Phrase:"
+echo -e "==== Mnemonic 2 PrvKey ====
+  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Enter Phrase:"
 read Mn2Pv1
 Mn2Pv2=""
 
@@ -634,13 +638,11 @@ Mn2Pv4=$(bin2hex "$Mn2Pv3")
 toclip "$Mn2Pv4"
 clear
 
-echo -e "Seed Phrase:\n $Mn2Pv1"
-echo -e "Entropy w/ Checksum (bin):\n $Mn2Pv2"
-echo -e "Entropy no Checksum (bin):\n $Mn2Pv3"
-echo -e "Prv Key in hex (length= ${#Mn2Pv4}):\n $Mn2Pv4  <== [On Clipboard]"
-echo -e "\nPLEASE RECORD THIS INFO MANUALLY"
-echo "IT WILL DISAPPEAR WHEN YOU LEAVE"
-echo "Hit Enter When Ready"
+echo -e "Seed Phrase:\n $Mn2Pv1
+Entropy w/ Checksum (bin):\n $Mn2Pv2
+Entropy no Checksum (bin):\n $Mn2Pv3
+Prv Key in hex (length= ${#Mn2Pv4}):\n $Mn2Pv4  <== [On Clipboard]
+Hit Enter When Ready"
 read junk
 jumpto mma
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -648,27 +650,26 @@ jumpto mma
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mma0:
 clear
-echo '== BASE Converter ==='
-echo '(1) HEX 2 BIN'
-echo '(2) HEX 2 DEC'
-echo '(3) BIN 2 HEX'
-echo '(4) BIN 2 DEC'
-echo '(5) DEC 2 HEX'
-echo '(6) DEC 2 BIN'
-
-echo '(7) TXT 2 B64'
-echo '(8) B64 2 TXT'
-echo '(9) TXT 2 HEX'
-echo '(0) HEX 2 TXT'
-
-echo '(-)'
-echo '(q) WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)'
-echo '(w) hex 2 b6 (hex TO base6)'
-echo '(e) b6 2 hex (base6 to base16) [good for dice]'
-echo '(r) roll dice as base6'
-echo '(t) Binary 2 Sha_256'
-echo '(\) EXIT'; read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
+echo -e "== BASE Converter ===
+ 1 | HEX 2 BIN
+ 2 | HEX 2 DEC
+ 3 | BIN 2 HEX
+ 4 | BIN 2 DEC
+ 5 | DEC 2 HEX
+ 6 | DEC 2 BIN
+ 7 | TXT 2 B64
+ 8 | B64 2 TXT
+ 9 | TXT 2 HEX
+ 0 | HEX 2 TXT
+ - | n\a
+ q | WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)
+ w | hex 2 b6 (hex TO base6)
+ e | b6 2 hex (base6 to base16) [good for dice]
+ r | roll dice as base6
+ t | Binary 2 Sha_256
+ \ | EXIT"
 ### CASES #########
+read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') jumpto mma01 ;;
 '2') jumpto mma02 ;;
 '3') jumpto mma03 ;;
@@ -936,22 +937,22 @@ jumpto mma0
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mmam:
 clear
-echo "Current Password: $EncMsgPass"
-echo '== Message En/DeCrypter'
-echo ' 1 - Enter Password (run 1st)'
-echo ' 2 - Encrypt (OpenSSL)'
-echo ' 3 - Decrypt (OpenSSL)'
-echo ' 4 - Encrypt (base64)'
-echo ' 5 - Decrypt (base64)'
-echo ' 6 - hex2txt'
-echo ' 7 - txt2hex'
-echo ' 8 - See Tables'
-echo ' 9 - Make Clip QR'
-echo ' 0 - Read Clip QR'
-echo ' - - Status'
-echo ' \ - Exit'
-read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
+echo -e "Current Password: $EncMsgPass
+== Message En/DeCrypter
+ 1 | Enter Password (run 1st)
+ 2 | Encrypt (OpenSSL)
+ 3 | Decrypt (OpenSSL)
+ 4 | Encrypt (base64)
+ 5 | Decrypt (base64)
+ 6 | txt2hex
+ 7 | hex2txt
+ 8 | See Tables
+ 9 | Make Clip QR
+ 0 | Read Clip QR
+ - | Status
+ \ | Exit"
 ### CASES #########
+read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') jumpto mmam1 ;;
 '2') jumpto mmam2 ;;
 '3') jumpto mmam3 ;;
