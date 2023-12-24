@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20231222_17:39_est--EJR
+# 20231224_18:33_est--EJR
 #BaseX EJR: bitcoin calcs
 
 #== FUNCTION ==============================================
@@ -191,6 +191,45 @@ ToTerm() {
 
   echo -e "Prv Key:\n $PvKHex\n\nWIF:\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nAddrs:\n $PbAddr\n\nURL (Bal) [On Clipboard]:\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tt2\nChecksum:\n hex=$Tt3\n bin=$Tt4\nEntropy w/ Checksum (bin):\n $Tt5\n\n==== Your seed phrase is ====\n$PhStr\n............................................"
 }
+hex2nato() {
+    local hex=$1
+    local result=""
+    local char
+
+    for ((i = 0; i < ${#hex}; i++)); do
+        char="${hex:i:1}"
+        case "$char" in
+            0) result+="zero";;
+            1) result+="one";;
+            2) result+="two";;
+            3) result+="three";;
+            4) result+="four";;
+            5) result+="five";;
+            6) result+="six";;
+            7) result+="seven";;
+            8) result+="eight";;
+            9) result+="nine";;
+            [aA]) result+="alpha";;
+            [bB]) result+="bravo";;
+            [cC]) result+="charlie";;
+            [dD]) result+="delta";;
+            [eE]) result+="echo";;
+            [fF]) result+="foxtrot";;
+            *) result+="$char";; # If not a valid character, keep it as is
+        esac
+
+        # Add a comma and space after each character, except the last one
+        if ((i < ${#hex} - 1)); then
+            result+=", "
+        fi
+    done
+
+    echo "$result"
+# Example usage:
+# hex2nato "A1F3B1C1"
+}
+
+
 #== VARS ==================================================
 logF="$HOME/Desktop/basex.txt"
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
@@ -529,6 +568,7 @@ echo -e "=== Main Menu =====================
  0 | Base Converter Calculators
  - | En/Decrypt Messages
  q | Speak Clipboard
+ w | Hex 2 Nato
  n | Universal Declaration of Human Rights
  \ | EXIT"
 ### CASES #########
@@ -540,6 +580,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '5') jumpto mma5;;
 '0') jumpto mma0;;
 'q') SayClip=$(xclip -o -selection clipboard); echo -e "==== Reading The Clipboard ====\n$SayClip"; echo "$SayClip" | festival --tts; crap;;
+'w') echo 'enter Hex (for nato)'; read hex2nato_IN; hex2nato_IN=${hex2nato_IN,,}; hex2nato_OUT=$(hex2nato "$hex2nato_IN"); toclip "$hex2nato_OUT"; clear; echo "$hex2nato_OUT"; crap;;
 'n') echo "$humanrights"; toclip "$humanrights"; crap;;
 '-') jumpto mmam;;
 '\') exit 0;; *) jumpto mma;; esac; jumpto mma
