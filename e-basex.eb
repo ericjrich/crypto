@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 #20240127_1033_est_EJR
 #BaseX EJRCNC: bitcoin and other encrytion tools
+
+### Do First ###
+shopt -s dotglob
+if ! command -v zenity &> /dev/null; then clear; echo -e "zenity is not installed. Please run the following command to install it:\n sudo apt-get install -y zenity"; exit 1; fi
+
 #====================================================================================================================================================
 #====================================================================================================================================================
 pf1() { local Pycode_IN="$1"; local Pycode_SRC=$(cat <<'PYEOF'
