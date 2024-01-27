@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#20231228_14:55_est--EJR
+#20240127_1023_est_EJR
 #BaseX EJR: bitcoin calcs
 #====================================================================================================================================================
 #====================================================================================================================================================
@@ -129,7 +129,15 @@ echo "$result"; }
 logF="$HOME/Desktop/basex.txt"
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
 Dep_Apt=(python3 minimodem base58 basez dc gnupg hashalot oathtool openssl qrencode ruby-ascii85 tesseract-ocr zbar-tools espeak festival flite imagemagick feh figlet python3-pip whiptail xclip yad zenity)
-PhFN="/tmp/numbers.txt"; PhF="/tmp/seed_phrase.txt"; bitwords="$HOME/a-me/z-share/code/bitwords.txt"
+PhFN="/tmp/numbers.txt"; PhF="/tmp/seed_phrase.txt"
+
+# Bitwords var
+bitwords="$HOME/a-me/z-share/code/bitwords.txt"
+if [ ! -f "$bitwords" ]; then
+  bitwords=$(zenity --file-selection --title="Select Bitwords File")
+  if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi
+fi
+
 EncMsgClip=""; EncMsgPass=""; b642txt_IN=""; b642txt_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
 #====================================================================================================================================================
 #====================================================================================================================================================
