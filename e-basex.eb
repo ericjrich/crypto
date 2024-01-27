@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20231226_1858_est_EJR
+#20231228_14:55_est--EJR
 #BaseX EJR: bitcoin calcs
 #====================================================================================================================================================
 #====================================================================================================================================================
@@ -96,24 +96,24 @@ wif2prv() { local IN="$1"; local OUT; OUT=$(echo -n "$IN" | base58 -d | xxd -p |
 ToLog() { local Tl1="$PvKHex"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
 local Tl2=$(hex2bin $Tl1); local Tl3=$(Sha256 $Tl2 | awk '{print $1}' | cut -c1-2); local Tl4=$(hex2bin $Tl3); local Tl5=$Tl2$Tl4
-local TlData=("Private Key: $PvKHex" "WIF: $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
+local TlData=("Private Key: $PvKHex" "WIF(p2pkh): $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
 for (( i=0; i<${#Tl5}; i+=11 )); do Tl6=${Tl5:$i:11}; echo $((2#${Tl6})); done > "$PhFN"
 while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
 local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
 clear; echo; echo 'saving.......'; touch $logF; echo -e "=== $(date -u '+%Y-%m-%d %H:%M:%S') UTC === $(date '+%Y-%m-%d %H:%M:%S') LocalTime ===\n" >>$logF
-for i in "${TlData[@]}"; do qrencode -t ASCIIi "$i" >>$logF; echo -e "\n⬆️ ${i%%:*}⬆️\n" >>$logF; done
-echo -e "Prv Key:\n $PvKHex\n\nWIF:\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nPub Addrs:\n $PbAddr\n\nURL (Bal):\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tl2\nChecksum:\n hex=$Tl3\n bin=$Tl4\nEntropy w/ Checksum (bin):\n $Tl5\n\n==== Your seed phrase is ====\n$PhStr\n............................................" >>$logF; echo "**** Saved In File: $logF ****"; }
+for i in "${TlData[@]}"; do value="${i#*: }"; qrencode -t ASCIIi "$value" >>$logF; echo -e "\n⬆️ ${i%%:*}⬆️\n" >>$logF; done
+echo -e "Prv Key:\n $PvKHex\n\nWIF(p2pkh):\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nPub Addrs:\n $PbAddr\n\nURL (Bal):\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tl2\nChecksum:\n hex=$Tl3\n bin=$Tl4\nEntropy w/ Checksum (bin):\n $Tl5\n\n==== Your seed phrase is ====\n$PhStr\n............................................" >>$logF; echo "**** Saved In File: $logF ****"; }
 #=========================================================================
 ToTerm() { local Tt1="$PvKHex"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"; toclip "$PbAddrUrl"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
 local Tt2=$(hex2bin $Tt1); local Tt3=$(Sha256 $Tt2 | awk '{print $1}' | cut -c1-2); local Tt4=$(hex2bin $Tt3); local Tt5=$Tt2$Tt4
-local TtData=("Private Key: $PvKHex" "WIF: $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
+local TtData=("Private Key: $PvKHex" "WIF(p2pkh): $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
 for (( i=0; i<${#Tt5}; i+=11 )); do Tt6=${Tt5:$i:11}; echo $((2#${Tt6})); done > "$PhFN"
 while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
 local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
 clear; echo; echo '=============== QR CODES =================='
-for i in "${TtData[@]}"; do qrencode -t ASCIIi "$i"; echo -e "\n⬆️ ${i%%:*}⬆️\n"; done
-echo -e "Prv Key:\n $PvKHex\n\nWIF:\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nAddrs:\n $PbAddr\n\nURL (Bal) [On Clipboard]:\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tt2\nChecksum:\n hex=$Tt3\n bin=$Tt4\nEntropy w/ Checksum (bin):\n $Tt5\n\n==== Your seed phrase is ====\n$PhStr\n............................................"; }
+for i in "${TtData[@]}"; do value="${i#*: }"; qrencode -t ASCIIi "$value"; echo -e "\n⬆️ ${i%%:*}⬆️\n"; done
+echo -e "Prv Key:\n $PvKHex\n\nWIF(p2pkh):\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nAddrs:\n $PbAddr\n\nURL (Bal) [On Clipboard]:\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tt2\nChecksum:\n hex=$Tt3\n bin=$Tt4\nEntropy w/ Checksum (bin):\n $Tt5\n\n==== Your seed phrase is ====\n$PhStr\n............................................"; }
 #=========================================================================
 hex2nato() { local hex=$1; local result=""; local char; for ((i = 0; i < ${#hex}; i++)); do
 	char="${hex:i:1}"
@@ -142,6 +142,7 @@ echo -e "=== Main Menu =====================
  3 | Dependency Installer
  4 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..
  5 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..
+ 6 | Mnemonic 2 Prv (testings)      ..REQUIRES MNEMONIC..
  0 | Base Converter Calculators
  - | En/Decrypt Messages
  q | Speak Clipboard
@@ -154,6 +155,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '3') GetDeps; crap;;
 '4') jumpto mma4;;
 '5') jumpto mma5;;
+'6') jumpto mma6;;
 '0') jumpto mma0;;
 'q') SayClip=$(xclip -o -selection clipboard); echo -e "==== Reading The Clipboard ====\n$SayClip"; echo "$SayClip" | festival --tts; crap;;
 'w') echo 'enter Hex (for nato)'; read hex2nato_IN; hex2nato_IN=${hex2nato_IN,,}; hex2nato_OUT=$(hex2nato "$hex2nato_IN"); toclip "$hex2nato_OUT"; clear; echo "$hex2nato_OUT"; crap;;
@@ -161,24 +163,142 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '\') rm "$PhFN"; rm "$PhF"; exit 0;; *) jumpto mma;; esac; jumpto mma
 #=========================================================================
 mma4:
-clear; echo -e "==== PrvKey 2 Mnemonic ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Hex Key:"; read Pv2Mn1
+# sha256()    get the sha256
+clear
+echo -e "==== PrvKey 2 Mnemonic ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Hex Key:"
+read Pv2Mn1
 Pv2Mn2=$(hex2bin $Pv2Mn1)
-if [ ${#Pv2Mn1} -eq 64 ]; then Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print $1}' | cut -c1-2); elif [ ${#Pv2Mn1} -eq 32 ]; then Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print substr($1,1,1)}'); else clear; echo 'Issue In Hex Length'; sleep 2; jumpto mma
+
+if [ ${#Pv2Mn1} -eq 64 ]; then
+  Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print $1}' | cut -c1-2)
+elif [ ${#Pv2Mn1} -eq 32 ]; then
+  Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print substr($1,1,1)}')
+else
+  clear
+  echo 'Issue In Hex Length'
+  sleep 2
+  jumpto mma
 fi
-Pv2Mn4=$(hex2bin $Pv2Mn3); Pv2Mn5=$Pv2Mn2$Pv2Mn4
-for (( i=0; i<${#Pv2Mn5}; i+=11 )); do Pv2Mn6=${Pv2Mn5:$i:11}; echo $((2#${Pv2Mn6})); done > "$PhFN"
-while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
-PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//'); toclip "$PhStr"
-clear; echo -e "Prv Key (hex):\n $Pv2Mn1\nEntropy (bin):\n $Pv2Mn2\nChecksum:\n hex=$Pv2Mn3\n bin=$Pv2Mn4\nEntropy w/ Checksum (bin):\n $Pv2Mn5\n==== Your seed phrase (On ClipBoard Too) ====\n$PhStr\nHit Enter When Ready"; read junk
+
+Pv2Mn4=$(hex2bin $Pv2Mn3)
+Pv2Mn5=$Pv2Mn2$Pv2Mn4
+
+for (( i=0; i<${#Pv2Mn5}; i+=11 )); do
+  Pv2Mn6=${Pv2Mn5:$i:11}
+  echo $((2#${Pv2Mn6}))
+done > "$PhFN"
+
+while read PhLN; do
+  PhLN=$((PhLN + 1))
+  sed -n "${PhLN}p" "$bitwords"
+done < "$PhFN" > "$PhF"
+
+PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
+toclip "$PhStr"
+clear
+echo -e "Prv Key (hex):\n $Pv2Mn1\nEntropy (bin):\n $Pv2Mn2\nChecksum:\n hex=$Pv2Mn3\n bin=$Pv2Mn4\nEntropy w/ Checksum (bin):
+ $Pv2Mn5\n==== Your seed phrase (On ClipBoard Too) ====\n$PhStr\nHit Enter When Ready"
+read junk
 jumpto mma
 #=========================================================================
 mma5:
-Mn2Pv2=""; clear; echo -e "==== Mnemonic 2 PrvKey ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Phrase:"; read Mn2Pv1
-for word in $Mn2Pv1; do PhLN=$(grep -n -w "$word" "$bitwords" | cut -d: -f1); PhLN=$((PhLN - 1)); Mn2Pv2+=$(printf "%011d" $(echo "obase=2;$PhLN" | bc)); done
-if [ ${#Mn2Pv2} -eq 264 ]; then Mn2Pv3="${Mn2Pv2:0:-8}"; elif [ ${#Mn2Pv2} -eq 132 ]; then Mn2Pv3="${Mn2Pv2:0:-4}"; else clear; echo 'Length issue with words'; sleep 2; jumpto mma
+# jumpto()    allows jumpting to other places in the program (ex. MMA is the main menu)
+# bin2hex()   convert binary to hex
+# $MnPv1      User Input of their phrase seperated by 1 space per word
+# $word       Current word in my phrase
+# $bitwords   The bip39 list
+# $PhLN       The line number of current word in the $bitwords list (-1)
+# $MnPv2      line numbers of word in 11 digit binary concatenated together into one string of binary
+# $MnPv3      the bianry string without the checksum at the end
+# $MnPv4      the binary string without the checksum at the end converted to hex
+word=""; PhLn=""; Mn2Pv1=""; Mn2Pv2=""; Mn2Pv3=""; Mn2Pv4=""
+clear
+echo -e "==== Mnemonic 2 PrvKey ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Phrase:"
+read Mn2Pv1
+
+for word in $Mn2Pv1; do
+  PhLN=$(grep -n -w "$word" "$bitwords" | cut -d: -f1)
+  PhLN=$((PhLN - 1))
+  Mn2Pv2+=$(printf "%011d" $(echo "obase=2;$PhLN" | bc))
+done
+
+if [ ${#Mn2Pv2} -eq 264 ]; then
+  Mn2Pv3="${Mn2Pv2:0:-8}"
+elif [ ${#Mn2Pv2} -eq 132 ]; then
+  Mn2Pv3="${Mn2Pv2:0:-4}"
+else
+  clear
+  echo 'Length issue with words'
+  sleep 2
+  jumpto mma
 fi
+
 Mn2Pv4=$(bin2hex "$Mn2Pv3")
-toclip "$Mn2Pv4"; clear; echo -e "Seed Phrase:\n $Mn2Pv1\nEntropy w/ Checksum (bin):\n $Mn2Pv2\nEntropy no Checksum (bin):\n $Mn2Pv3\nPrv Key in hex (length= ${#Mn2Pv4}):\n $Mn2Pv4  <== [On Clipboard]\nHit Enter When Ready"; read junk
+toclip "$Mn2Pv4"; clear; echo -e "Seed Phrase:\n $Mn2Pv1\nEntropy w/ Checksum (bin):\n $Mn2Pv2\nEntropy no Checksum (bin):
+ $Mn2Pv3\nPrv Key in hex (length= ${#Mn2Pv4}):\n $Mn2Pv4  <== [On Clipboard]\nHit Enter When Ready"
+read junk
+jumpto mma
+#=========================================================================
+mma6:
+# jumpto()    allows jumpting to other places in the program (ex. MMA is the main menu)
+# bin2hex()   convert binary to hex
+# dec2bin()   convert dec to bin
+# bin2bin()   convert
+# sha256()    get the sha256
+# $MnPv1      User Input of their phrase seperated by 1 space per word
+# $word       Current word in my phrase
+# $bitwords   The bip39 list
+# $PhLN       The line number of current word in the $bitwords list (-1)
+# $MnPv2      line numbers of word in 11 digit binary concatenated together into one string of binary
+# $MnPv3      the bianry string without the checksum at the end
+# $MnPv4      the binary string without the checksum at the end converted to hex
+# $MnPv5      The sha256() of the 1st 32 chars of $Mn2Pv2 in binary
+word=""; PhLn=""; Mn2Pv1=""; Mn2Pv2=""; Mn2Pv3=""; Mn2Pv4=""
+clear
+echo -e "==== Mnemonic to PrvKey ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt)\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Phrase (separated by spaces):"
+read Mn2Pv1
+
+for word in $Mn2Pv1; do
+  PhLN=$(grep -n -w "$word" "$bitwords" | cut -d: -f1)
+  PhLN=$((PhLN - 1))
+  Mn2Pv2+=$(printf "%011d" $(echo "obase=2;$PhLN" | bc))
+done
+Mn2Pv3=$(bin2dec "$Mn2Pv2")
+Mn2Pv4=$(bin2hex "$Mn2Pv2")
+
+Mn2Pv5="${Mn2Pv2:0:32}"
+Mn2Pv5=$(Sha256 $Mn2Pv5 | awk '{print $1}' | cut -c1)
+Mn2Pv5=$(hex2bin "$Mn2Pv5")
+Mn2Pv5=$(bin2dec "$Mn2Pv5")
+Mn2Pv5=$((Mn2Pv5 + 2))
+Mn2Pv5=$(dec2bin "$Mn2Pv5")
+
+Mn2Pv6="$Mn2Pv2$MnPv5"
+Mn2Pv6=$(Sha256 $Mn2Pv6 | awk '{print $1}' | cut -c1)
+Mn2Pv6=$(hex2bin "$Mn2Pv6")
+Mn2Pv6=$(bin2dec "$Mn2Pv6")
+Mn2Pv6=$((Mn2Pv6 + 2))
+Mn2Pv6=$(dec2bin "$Mn2Pv6")
+
+
+#toclip "$Mn2Pv5"
+clear
+echo -e "
+
+Seed Phrase:
+$Mn2Pv1
+Binary:
+__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|
+$Mn2Pv2
+Decimal:
+$Mn2Pv3
+Hex:
+$Mn2Pv4
+First Half Of CheckSum:
+BIN= $Mn2Pv5 (DEC= $Mn2Pv6)
+
+== HIT ENTER =="
+read junk
 jumpto mma
 #====================================================================================================================================================
 #====================================================================================================================================================
