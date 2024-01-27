@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#20240127_1023_est_EJR
-#BaseX EJR: bitcoin calcs
+#20240127_1033_est_EJR
+#BaseX EJRCNC: bitcoin and other encrytion tools
 #====================================================================================================================================================
 #====================================================================================================================================================
 pf1() { local Pycode_IN="$1"; local Pycode_SRC=$(cat <<'PYEOF'
@@ -145,12 +145,12 @@ jumpto loadvars
 mma:
 clear
 echo -e "=== Main Menu =====================
- 1 | Enter Prv Key
- 2 | Generate New Prv Key
+ 1 | Enter Prv Key                                          (Bitcoin)
+ 2 | Generate New Prv Key                                   (Bitcoin)
  3 | Dependency Installer
- 4 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..
- 5 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..
- 6 | Mnemonic 2 Prv (testings)      ..REQUIRES MNEMONIC..
+ 4 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..  (Bitcoin)
+ 5 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..   (Bitcoin)
+ 6 | Mnemonic 2 Prv (testings)      ..REQUIRES MNEMONIC..   (Bitcoin)
  0 | Base Converter Calculators
  - | En/Decrypt Messages
  q | Speak Clipboard
