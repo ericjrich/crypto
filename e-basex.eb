@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#20240127_1051_est_EJR
+#20240131_1116_est_EJR
 #BaseX EJRCNC: bitcoin and other encrytion tools
 
 ### Do First ###
@@ -9,7 +9,7 @@
 
 #====================================================================================================================================================
 #====================================================================================================================================================
-pf1() { local Pycode_IN="$1"; local Pycode_SRC=$(cat <<'PYEOF'
+pf1() { local bash2pyV1="$1"; bash2pyV2="$2"; local Pycode_SRC=$(cat <<'PYEOF'
 #!/usr/bin/env python3
 import os, pyperclip, hashlib, base58, secrets, qrcode, subprocess, sys
 from Crypto.Hash import RIPEMD160
@@ -46,7 +46,8 @@ def hash160(data):
 #= User Choice (1=User Input Key / 2=Gen. Key) ==
 choice = sys.argv[1]
 if choice == '1':
-  PvKHex = input()
+  PvKHex = sys.argv[2]
+  #PvKHex = input()
   if len(PvKHex) != 64:
     print("Invalid Prv key length."); exit()
 elif choice == '2':
@@ -69,7 +70,7 @@ wif = Prv_key_to_wif(PvKHex)
 print(f"{PvKHex}|{wif}|{PbKHex}|{PbKh160}|{PbAddr}", flush=True)
 PYEOF
 )
-local pycode_OUT=$(python3 -c "$Pycode_SRC" "$Pycode_IN")
+local pycode_OUT=$(python3 -c "$Pycode_SRC" "$bash2pyV1" "$bash2pyV2")
 IFS='|' read -r PvKHex wif PbKHex PbKh160 PbAddr <<< "$pycode_OUT"
 }
 #=========================================================================
@@ -151,12 +152,14 @@ jumpto loadvars
 mma:
 clear
 echo -e "=== Main Menu =====================
- 1 | Enter Prv Key                                          (Bitcoin)
+ 1 | Enter Prv Key          **hex**                         (Bitcoin)
  2 | Generate New Prv Key                                   (Bitcoin)
- 3 | Dependency Installer
- 4 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..  (Bitcoin)
- 5 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..   (Bitcoin)
- 6 | Mnemonic 2 Prv (testings)      ..REQUIRES MNEMONIC..   (Bitcoin)
+ 3 | Enter Prv Key          **bin**                         (Bitcoin)
+ 4 | Generate New Prv Key                                   (Bitcoin)
+ 6 | Dependency Installer
+ 7 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..  (Bitcoin)
+ 8 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..   (Bitcoin)
+ 9 | Mnemonic 2 Prv (testings)      ..REQUIRES MNEMONIC..   (Bitcoin)
  0 | Base Converter Calculators
  - | En/Decrypt Messages
  q | Speak Clipboard
@@ -164,19 +167,20 @@ echo -e "=== Main Menu =====================
  \ | EXIT"
 #=======================
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
-'1') echo 'Enter Prv Key:'; pf1 '1'; jumpto mmb;;
-'2') pf1 '2'; jumpto mmb;;
-'3') GetDeps; crap;;
-'4') jumpto mma4;;
-'5') jumpto mma5;;
-'6') jumpto mma6;;
-'0') jumpto mma0;;
-'q') SayClip=$(xclip -o -selection clipboard); echo -e "==== Reading The Clipboard ====\n$SayClip"; echo "$SayClip" | festival --tts; crap;;
-'w') echo 'enter Hex (for nato)'; read hex2nato_IN; hex2nato_IN=${hex2nato_IN,,}; hex2nato_OUT=$(hex2nato "$hex2nato_IN"); toclip "$hex2nato_OUT"; clear; echo "$hex2nato_OUT"; crap;;
-'-') jumpto mmam;;
-'\') rm "$PhFN"; rm "$PhF"; exit 0;; *) jumpto mma;; esac; jumpto mma
+'1')  echo 'Enter Prv Key(hex):'; read prvkeyin; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
+'2')  pf1 '2'; jumpto mmb;;
+'3')  echo 'Enter Prv Key(bin):'; read prvkeyin; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 256 ]; then prvkeyinpadding=$((256 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(bin2hex "$prvkeyin"); pf1 '1' "$prvkeyin"; jumpto mmb;;
+'6')  GetDeps; crap;;
+'7')  jumpto mma7;;
+'8')  jumpto mma8;;
+'9')  jumpto mma9;;
+'0')  jumpto mma0;;
+'q')  SayClip=$(xclip -o -selection clipboard); echo -e "==== Reading The Clipboard ====\n$SayClip"; echo "$SayClip" | festival --tts; crap;;
+'w')  echo 'enter Hex (for nato)'; read hex2nato_IN; hex2nato_IN=${hex2nato_IN,,}; hex2nato_OUT=$(hex2nato "$hex2nato_IN"); toclip "$hex2nato_OUT"; clear; echo "$hex2nato_OUT"; crap;;
+'-')  jumpto mmam;;
+'\')  rm "$PhFN"; rm "$PhF"; exit 0;; *) jumpto mma;; esac; jumpto mma
 #=========================================================================
-mma4:
+mma7:
 # sha256()    get the sha256
 clear
 echo -e "==== PrvKey 2 Mnemonic ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Hex Key:"
@@ -215,7 +219,7 @@ echo -e "Prv Key (hex):\n $Pv2Mn1\nEntropy (bin):\n $Pv2Mn2\nChecksum:\n hex=$Pv
 read junk
 jumpto mma
 #=========================================================================
-mma5:
+mma8:
 # jumpto()    allows jumpting to other places in the program (ex. MMA is the main menu)
 # bin2hex()   convert binary to hex
 # $MnPv1      User Input of their phrase seperated by 1 space per word
@@ -253,7 +257,7 @@ toclip "$Mn2Pv4"; clear; echo -e "Seed Phrase:\n $Mn2Pv1\nEntropy w/ Checksum (b
 read junk
 jumpto mma
 #=========================================================================
-mma6:
+mma9:
 # jumpto()    allows jumpting to other places in the program (ex. MMA is the main menu)
 # bin2hex()   convert binary to hex
 # dec2bin()   convert dec to bin
@@ -709,6 +713,22 @@ Das_Tables=$(cat <<'AsciiEOF'
  125    |  7D    |  0111 1101  |  }    |  175    |  }
  126    |  7E    |  0111 1110  |  ~    |  176    |  ~
  127    |  7F    |  0111 1111  |  DEL  |  177    |  DEL (Delete)
+
+===============================================================================
+
+*Points On Elliptical Curve*
+115792089237316195423570985008687907852837564279074904382605163141518161494337
+
+*Largest (DEC)*
+115792089237316195423570985008687907852837564279074904382605163141518161494336
+
+*Largest (BIN)*
+1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111010111010101011101101110011100110101011110100100010100000001110111011111111010010010111101000110011010000001101100100000101000000
+
+*Largest (HEX)*
+fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140
+
+===============================================================================
 AsciiEOF
 )
 jumpto mma
