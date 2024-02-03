@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#20240131_1116_est_EJR
+# 20240203_1132_est_EJR
 #BaseX EJRCNC: bitcoin and other encrytion tools
 
 ### Do First ###
@@ -85,6 +85,12 @@ txt2ssl() { local In="$1"; local Out=$(echo -n "$In" | openssl aes-256-cbc -a -s
 ssl2txt() { local In="$1"; local Out=$(echo -n "$In" | openssl aes-256-cbc -d -a -pass pass:"$EncMsgPass" -pbkdf2); echo -n "$Out"; }
 txt2b64() { local In="$1"; local Out=$(echo -n "$In" | base64); echo -n "$Out"; }
 b642txt() { local In="$1"; local Out=$(echo -n "$In" | base64 -d); echo -n "$Out"; }
+#!!!!!!!!!!!!!
+txt2b58() { local In="$1"; local Out=$(echo -n "$In" | base58); echo -n "$Out"; }
+b582txt() { local In="$1"; local Out=$(echo -n "$In" | base58 -d); echo -n "$Out"; }
+qrclip2txt()  { xclip -selection clipboard -t image/png -o > /tmp/qr.png; local qr_result=$(zbarimg -q --raw /tmp/qr.png); if [ -n "$qr_result" ]; then echo -n "$qr_result" | xclip -selection clipboard; echo "QR code result copied to clipboard: $qr_result"; else echo "Failed to decode QR code."; fi; rm -f /tmp/qr.png; }
+ocrclip2txt() { xclip -selection clipboard -t image/png -o > /tmp/ocr.png; local ocr_result=$(tesseract /tmp/ocr.png - 2>/dev/null); if [ -n "$ocr_result" ]; then echo -n "$ocr_result" | xclip -selection clipboard; echo "ocr result copied to clipboard: $ocr_result"; else echo "Failed to decode ocr."; fi; rm -f /tmp/ocr.png; }
+#!!!!!!!!!!!!!
 hex2txt() { local In="$1"; In=${In,,}; In=$(echo -n $In | sed 's/ //g'); local Out=$(echo -n "$In" | xxd -r -p); echo -n "$Out"; }
 txt2hex() { local In="$1"; local Out=$(echo -n "$In" | xxd -p | tr -d '\n'); echo -n "$Out"; }
 #=========================================================================
@@ -132,6 +138,7 @@ hex2nato() { local hex=$1; local result=""; local char; for ((i = 0; i < ${#hex}
 done
 echo "$result"; }
 #====================================================================================================================================================
+stock_calc() { local purchase_price; local total_investment; local current_price; local quantity; local current_value; local profit_or_loss; validate_input() { while true; do read -p "$1" input; if [[ $input =~ ^[0-9]*(\.[0-9]*)?$ ]]; then break; else echo "Invalid input. Please enter a valid numeric value."; fi; done; }; clear; validate_input "Enter bitcoin start-price (per coin): "; purchase_price=$input; validate_input "Enter what we bought (in dollars): "; total_investment=$input; validate_input "Enter bitcoin end-price (per coin): "; current_price=$input; quantity=$(bc <<< "scale=8; $total_investment / $purchase_price"); current_value=$(bc <<< "scale=2; $current_price * $quantity"); profit_or_loss=$(bc <<< "scale=2; ($current_price * $quantity) - $total_investment"); clear; printf "Original Unit Value:\n \$%.2f\n" "$purchase_price"; printf "Original Investment Value:\n \$%.2f\n" "$total_investment"; printf "Current Unit Value:\n \$%.2f\n" "$current_price"; printf "Current Investment Value:\n \$%.2f\n" "$current_value"; printf "Profit OR Loss:\n \$%.2f\n" "$profit_or_loss"; echo; }
 #====================================================================================================================================================
 logF="$HOME/Desktop/basex.txt"
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
@@ -145,7 +152,7 @@ if [ ! -f "$bitwords" ]; then
   if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi
 fi
 
-EncMsgClip=""; EncMsgPass=""; b642txt_IN=""; b642txt_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
+EncMsgClip=""; EncMsgPass=""; b642txt_IN=""; b642txt_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""; b582txt_IN=""; b582txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""
 #====================================================================================================================================================
 #====================================================================================================================================================
 jumpto loadvars
@@ -164,6 +171,9 @@ echo -e "=== Main Menu =====================
  - | En/Decrypt Messages
  q | Speak Clipboard
  w | Hex 2 Nato
+ e | Stock Calc
+ r | CLipboard  QR To Text  ** have image on clipboard already **
+ t | Clipboard OCR To Text  ** have image on clipboard already **
  \ | EXIT"
 #=======================
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
@@ -175,9 +185,12 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '8')  jumpto mma8;;
 '9')  jumpto mma9;;
 '0')  jumpto mma0;;
+'-')  jumpto mmam;;
 'q')  SayClip=$(xclip -o -selection clipboard); echo -e "==== Reading The Clipboard ====\n$SayClip"; echo "$SayClip" | festival --tts; crap;;
 'w')  echo 'enter Hex (for nato)'; read hex2nato_IN; hex2nato_IN=${hex2nato_IN,,}; hex2nato_OUT=$(hex2nato "$hex2nato_IN"); toclip "$hex2nato_OUT"; clear; echo "$hex2nato_OUT"; crap;;
-'-')  jumpto mmam;;
+'e')  stock_calc; crap;;
+'r')  qrclip2txt; crap;;
+'t')  ocrclip2txt; crap;;
 '\')  rm "$PhFN"; rm "$PhF"; exit 0;; *) jumpto mma;; esac; jumpto mma
 #=========================================================================
 mma7:
@@ -350,12 +363,14 @@ echo -e "== BASE Converter ===
  8 | B64 2 TXT
  9 | TXT 2 HEX
  0 | HEX 2 TXT
- - | n\a
- q | WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)
- w | hex 2 b6 (hex TO base6)
- e | b6 2 hex (base6 to base16) [good for dice]
- r | roll dice as base6
- t | Binary 2 Sha_256
+ q | TXT 2 B58
+ w | B58 2 TXT
+ a | WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)
+ s | hex 2 b6 (hex TO base6)
+ d | b6 2 hex (base6 to base16) [good for dice]
+ f | roll dice as base6
+ g | Binary 2 Sha_256
+
  \ | EXIT"
 #=======================
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
@@ -365,18 +380,19 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '4') jumpto mma04 ;;
 '5') jumpto mma05 ;;
 '6') jumpto mma06 ;;
-
 '7') jumpto mma07 ;;
 '8') jumpto mma08 ;;
 '9') jumpto mma09 ;;
 '0') jumpto mma00 ;;
-'-') jumpto mma0m ;;
 
 'q') jumpto mma0q ;;
 'w') jumpto mma0w ;;
-'e') jumpto mma0e ;;
-'r') jumpto mma0r ;;
-'t') jumpto mma0t ;;
+
+'a') jumpto mma0a ;;
+'s') jumpto mma0s ;;
+'d') jumpto mma0d ;;
+'f') jumpto mma0f ;;
+'g') jumpto mma0g ;;
 
 '\') jumpto mma;; *) jumpto mma0 ;; esac
 #=========================================================================
@@ -450,36 +466,47 @@ hex2txt_IN=$(echo -n "$hex2txt_IN"); hex2txt_OUT=$(hex2txt "$hex2txt_IN"); tocli
 echo -e "hex2txt  (Length= ${#hex2txt_OUT})\n  $hex2txt_OUT\n\n* Results Available On Clipboard *"; crap
 jumpto mma0
 #=========================================================================
-mma0m:
+mma0q:
+txt2b58_IN=""; txt2b58_OUT=""
+echo 'TXT 2 B58: Enter Your Text'; read -r txt2b58_IN
+txt2b58_IN=$(echo -n "$txt2b58_IN"); txt2b58_OUT=$(txt2b58 "$txt2b58_IN"); toclip "$txt2b58_OUT"
+echo -e "txt2b58  (Length= ${#txt2b58_OUT})\n  $txt2b58_OUT\n\n* Results Available On Clipboard *"; crap
 jumpto mma0
 #=========================================================================
-mma0q:
+mma0w:
+b582txt_IN=""; b582txt_OUT=""
+echo 'B58 2 TXT: Enter Your Text'; read -r b582txt_IN
+b582txt_IN=$(echo -n "$b582txt_IN"); b582txt_OUT=$(b582txt "$b582txt_IN"); toclip "$b582txt_OUT"
+echo -e "b582txt  (Length= ${#b582txt_OUT})\n  $b582txt_OUT\n\n* Results Available On Clipboard *"; crap
+jumpto mma0
+#=========================================================================
+mma0a:
 wif2prv_IN=""; wif2prv_OUT=""
 echo 'WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)'; read -r wif2prv_IN
 wif2prv_IN=$(echo -n "$wif2prv_IN"); wif2prv_OUT=$(wif2prv "$wif2prv_IN"); toclip "$wif2prv_OUT"
 echo -e "WIF 2 PRV  (Length= ${#wif2prv_OUT})\n  $wif2prv_OUT\n\n* Results Available On Clipboard *"; crap
 jumpto mma0
 #=========================================================================
-mma0w:
+mma0s:
 hex2b6_IN=""; hex2b6_OUT=""
 echo 'hex to b6'; read -r hex2b6_IN
 hex2b6_IN=$(echo -n "$hex2b6_IN"); hex2b6_OUT=$(hex2b6 "$hex2b6_IN"); toclip "$hex2b6_OUT"
 echo -e "hex to b6 (Length= ${#hex2b6_OUT})\n  $hex2b6_OUT\n\n* Results Available On Clipboard *"; crap
 jumpto mma0
 #=========================================================================
-mma0e:
+mma0d:
 b62hex_IN=""; b62hex_OUT=""
 echo 'b6 to hex (use with dice too [6 on di is 0, 99 rolls]'; read -r b62hex_IN
 b62hex_IN=$(echo -n "$b62hex_IN"); b62hex_OUT=$(b62hex "$b62hex_IN"); toclip "$b62hex_OUT"
 echo -e "b6 to hex (Length= ${#b62hex_OUT})\n  $b62hex_OUT\n\n* Results Available On Clipboard *"; crap
 jumpto mma0
 #=========================================================================
-mma0r:
+mma0f:
 dice_IN=""; dice_OUT=""; clear; dice; toclip "$dice_OUT"
 echo -e "\n----------------------------------------\nDice As Base 6 (Length= ${#dice_OUT})\n  $dice_OUT\n\n* Results Available On Clipboard *"; crap
 jumpto mma0
 #=========================================================================
-mma0t:
+mma0g:
 bin2sha256_IN=""; bin2sha256_OUT=""
 echo 'Enter binary to be checksummed:'; read -r bin2sha256_IN
 bin2sha256_IN=$(echo -n "$bin2sha256_IN"); bin2sha256_OUT=$(Sha256 "$bin2sha256_IN"); toclip "$bin2sha256_OUT"
