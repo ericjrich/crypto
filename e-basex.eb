@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240203_1132_est_EJR
+# 20240204_0205_est_EJR
 #BaseX EJRCNC: bitcoin and other encrytion tools
 
 ### Do First ###
@@ -85,11 +85,55 @@ txt2ssl() { local In="$1"; local Out=$(echo -n "$In" | openssl aes-256-cbc -a -s
 ssl2txt() { local In="$1"; local Out=$(echo -n "$In" | openssl aes-256-cbc -d -a -pass pass:"$EncMsgPass" -pbkdf2); echo -n "$Out"; }
 txt2b64() { local In="$1"; local Out=$(echo -n "$In" | base64); echo -n "$Out"; }
 b642txt() { local In="$1"; local Out=$(echo -n "$In" | base64 -d); echo -n "$Out"; }
-#!!!!!!!!!!!!!
 txt2b58() { local In="$1"; local Out=$(echo -n "$In" | base58); echo -n "$Out"; }
 b582txt() { local In="$1"; local Out=$(echo -n "$In" | base58 -d); echo -n "$Out"; }
 qrclip2txt()  { xclip -selection clipboard -t image/png -o > /tmp/qr.png; local qr_result=$(zbarimg -q --raw /tmp/qr.png); if [ -n "$qr_result" ]; then echo -n "$qr_result" | xclip -selection clipboard; echo "QR code result copied to clipboard: $qr_result"; else echo "Failed to decode QR code."; fi; rm -f /tmp/qr.png; }
 ocrclip2txt() { xclip -selection clipboard -t image/png -o > /tmp/ocr.png; local ocr_result=$(tesseract /tmp/ocr.png - 2>/dev/null); if [ -n "$ocr_result" ]; then echo -n "$ocr_result" | xclip -selection clipboard; echo "ocr result copied to clipboard: $ocr_result"; else echo "Failed to decode ocr."; fi; rm -f /tmp/ocr.png; }
+#!!!!!!!!!!!!!
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dec2b62() { local decimal="$1"; local base62_representation; base62_representation=$(python3 - <<END
+def decimal_to_base62(decimal):
+    base62_chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+    base62_string = []
+
+    while decimal > 0:
+        remainder = decimal % 62
+        base62_string.append(base62_chars[remainder])
+        decimal //= 62
+
+    if not base62_string:
+        base62_string.append('0')
+
+    return ''.join(reversed(base62_string))
+
+decimal_number = $decimal
+base62_to_print = decimal_to_base62(decimal_number)
+print(base62_to_print)
+END
+)
+echo "$base62_representation"; }
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+b622dec() { local base62_string="$1"; local decimal_result; decimal_result=$(python3 - <<END
+def base62_to_decimal(base62_string):
+    base62_chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+    decimal_number = 0
+    base = 62
+
+    for char in base62_string:
+        decimal_number = decimal_number * base + base62_chars.index(char)
+
+    return decimal_number
+
+base62_input = "$base62_string"
+decimal_output = base62_to_decimal(base62_input)
+print(decimal_output)
+END
+)
+echo "$decimal_result"; }
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+hex2b62() { local In="$1"; local in2dec=$(hex2dec "$In"); local out=$(dec2b62 "$in2dec"); echo "$out"; }
+b622hex() { local In="$1"; local in2dec=$(b622dec "$In"); local out=$(dec2hex "$in2dec"); echo "$out"; }
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #!!!!!!!!!!!!!
 hex2txt() { local In="$1"; In=${In,,}; In=$(echo -n $In | sed 's/ //g'); local Out=$(echo -n "$In" | xxd -r -p); echo -n "$Out"; }
 txt2hex() { local In="$1"; local Out=$(echo -n "$In" | xxd -p | tr -d '\n'); echo -n "$Out"; }
@@ -144,15 +188,11 @@ logF="$HOME/Desktop/basex.txt"
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
 Dep_Apt=(python3 minimodem base58 basez dc gnupg hashalot oathtool openssl qrencode ruby-ascii85 tesseract-ocr zbar-tools espeak festival flite imagemagick feh figlet python3-pip whiptail xclip yad zenity)
 PhFN="/tmp/numbers.txt"; PhF="/tmp/seed_phrase.txt"
-
-# Bitwords var
-bitwords="$HOME/a-me/z-share/code/bitwords.txt"
-if [ ! -f "$bitwords" ]; then
-  bitwords=$(zenity --file-selection --title="Select Bitwords File")
-  if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi
-fi
-
-EncMsgClip=""; EncMsgPass=""; b642txt_IN=""; b642txt_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""; b582txt_IN=""; b582txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""
+bitwords="$HOME/a-me/z-share/code/bitwords.txt"; if [ ! -f "$bitwords" ]; then bitwords=$(zenity --file-selection --title="Select Bitwords File"); if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi; fi
+# prep empty vars
+b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622dec_OUT=""; b622hex_IN=""; b622hex_OUT=""; b62hex_IN=""; b62hex_OUT=""; b642txt_IN=""; b642txt_OUT=""; bin2dec_IN=""; bin2dec_OUT=""; bin2hex_IN=""; bin2hex_OUT=""; bin2sha256_IN=""; bin2sha256_OUT=""; dec2b62_IN=""; dec2b62_OUT=""; dec2bin_IN=""; dec2bin_OUT=""; dec2hex_IN=""; dec2hex_OUT=""; dice_IN=""; dice_OUT=""; hex2b62_IN=""; hex2b62_OUT=""; hex2b6_IN=""; hex2b6_OUT=""; hex2bin_IN=""; hex2bin_OUT=""; hex2dec_IN=""; hex2dec_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; wif2prv_IN=""; wif2prv_OUT=""
+# prep empty vars
+EncMsgClip=""; EncMsgPass=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
 #====================================================================================================================================================
 #====================================================================================================================================================
 jumpto loadvars
@@ -365,6 +405,10 @@ echo -e "== BASE Converter ===
  0 | HEX 2 TXT
  q | TXT 2 B58
  w | B58 2 TXT
+ e | DEC 2 B62
+ r | B62 2 DEC
+ t | HEX 2 B62
+ y | B62 2 HEX
  a | WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)
  s | hex 2 b6 (hex TO base6)
  d | b6 2 hex (base6 to base16) [good for dice]
@@ -387,6 +431,10 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 
 'q') jumpto mma0q ;;
 'w') jumpto mma0w ;;
+'e') jumpto mma0e ;;
+'r') jumpto mma0r ;;
+'t') jumpto mma0t ;;
+'y') jumpto mma0y ;;
 
 'a') jumpto mma0a ;;
 's') jumpto mma0s ;;
@@ -478,6 +526,34 @@ b582txt_IN=""; b582txt_OUT=""
 echo 'B58 2 TXT: Enter Your Text'; read -r b582txt_IN
 b582txt_IN=$(echo -n "$b582txt_IN"); b582txt_OUT=$(b582txt "$b582txt_IN"); toclip "$b582txt_OUT"
 echo -e "b582txt  (Length= ${#b582txt_OUT})\n  $b582txt_OUT\n\n* Results Available On Clipboard *"; crap
+jumpto mma0
+#=========================================================================
+mma0e:
+dec2b62_IN=""; dec2b62_OUT=""
+echo 'DEC 2 B62: Enter Your Text'; read -r dec2b62_IN
+dec2b62_IN=$(echo -n "$dec2b62_IN"); dec2b62_OUT=$(dec2b62 "$dec2b62_IN"); toclip "$dec2b62_OUT"
+echo -e "dec2b62  (Length= ${#dec2b62_OUT})\n  $dec2b62_OUT\n\n* Results Available On Clipboard *"; crap
+jumpto mma0
+#=========================================================================
+mma0r:
+b622dec_IN=""; b622dec_OUT=""
+echo 'B62 2 TXT: Enter Your Text'; read -r b622dec_IN
+b622dec_IN=$(echo -n "$b622dec_IN"); b622dec_OUT=$(b622dec "$b622dec_IN"); toclip "$b622dec_OUT"
+echo -e "b622dec  (Length= ${#b622dec_OUT})\n  $b622dec_OUT\n\n* Results Available On Clipboard *"; crap
+jumpto mma0
+#=========================================================================
+mma0t:
+hex2b62_IN=""; hex2b62_OUT=""
+echo 'HEX 2 B62: Enter Your HEX'; read -r hex2b62_IN
+hex2b62_IN=$(echo -n "$hex2b62_IN"); hex2b62_OUT=$(hex2b62 "$hex2b62_IN"); toclip "$hex2b62_OUT"
+echo -e "hex2b62  (Length= ${#hex2b62_OUT})\n  $hex2b62_OUT\n\n* Results Available On Clipboard *"; crap
+jumpto mma0
+#=========================================================================
+mma0y:
+b622hex_IN=""; b622hex_OUT=""
+echo 'B62 2 HEX: Enter Your B62'; read -r b622hex_IN
+b622hex_IN=$(echo -n "$b622hex_IN"); b622hex_OUT=$(b622hex "$b622hex_IN"); toclip "$b622hex_OUT"
+echo -e "b622hex  (Length= ${#b622hex_OUT})\n  $b622hex_OUT\n\n* Results Available On Clipboard *"; crap
 jumpto mma0
 #=========================================================================
 mma0a:
