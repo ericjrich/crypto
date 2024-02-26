@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-#20240216_2151_est_EJR
+# 20240225_2332_est_EJR
 #BaseX EJRCNC: bitcoin and other encrytion tools
 
 ### Do First ###
   shopt -s dotglob
-  if ! command -v zenity &> /dev/null; then clear; echo -e "zenity is not installed. Please run the following command to install it:\n sudo apt-get install -y zenity"; exit 1; fi
+  if ! command -v dialog &> /dev/null; then clear; echo -e "dialog is not installed. Please run the following command to install it:\n sudo apt-get install -y dialog"; exit 1; fi
   if ! command -v xclip &> /dev/null; then echo "xclip is not installed. Please run the following command to install it:"; echo "sudo apt-get install -y xclip"; exit 1; fi
 
 #====================================================================================================================================================
@@ -198,15 +198,20 @@ echo "$result"; }
 #====================================================================================================================================================
 stock_calc() { local purchase_price; local total_investment; local current_price; local quantity; local current_value; local profit_or_loss; validate_input() { while true; do read -p "$1" input; if [[ $input =~ ^[0-9]*(\.[0-9]*)?$ ]]; then break; else echo "Invalid input. Please enter a valid numeric value."; fi; done; }; clear; validate_input "Enter bitcoin start-price (per coin): "; purchase_price=$input; validate_input "Enter what we bought (in dollars): "; total_investment=$input; validate_input "Enter bitcoin end-price (per coin): "; current_price=$input; quantity=$(bc <<< "scale=8; $total_investment / $purchase_price"); current_value=$(bc <<< "scale=2; $current_price * $quantity"); profit_or_loss=$(bc <<< "scale=2; ($current_price * $quantity) - $total_investment"); clear; printf "Original Unit Value:\n \$%.2f\n" "$purchase_price"; printf "Original Investment Value:\n \$%.2f\n" "$total_investment"; printf "Current Unit Value:\n \$%.2f\n" "$current_price"; printf "Current Investment Value:\n \$%.2f\n" "$current_value"; printf "Profit OR Loss:\n \$%.2f\n" "$profit_or_loss"; echo; }
 #====================================================================================================================================================
-logF="$HOME/Desktop/basex.txt"
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
 Dep_Apt=(python3 minimodem base58 basez dc gnupg hashalot oathtool openssl qrencode ruby-ascii85 tesseract-ocr zbar-tools espeak festival flite imagemagick feh figlet python3-pip whiptail xclip yad zenity)
 PhFN="/tmp/numbers.txt"; PhF="/tmp/seed_phrase.txt"
-bitwords="$HOME/a-me/z-share/code/bitwords.txt"; if [ ! -f "$bitwords" ]; then bitwords=$(zenity --file-selection --title="Select Bitwords File"); if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi; fi
+logF="$HOME/Desktop/basex.txt"
+
+#basex.txt
+if [ -d "$HOME/Desktop" ]; then logF="$HOME/Desktop/basex.txt"; else logF="/tmp/basex.txt"; fi
+
+#bitword.txt
+#old code: bitwords="$HOME/a-me/z-share/code/bitwords.txt"; if [ ! -f "$bitwords" ]; then bitwords=$(zenity --file-selection --title="Select Bitwords File"); if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi; fi
+tv1="$HOME/a-me/z-share/code/bitwords.txt"; tv2="/etc/skel/a-me/z-share/code/bitwords.txt"; if [ ! -f "$tv1" ] && [ ! -f "$tv2" ]; then bitwords=$(dialog --title "File Selection" --fselect / 0 0 --stdout); if [ ! -f "$bitwords" ]; then echo "No valid file selected."; exit 1; fi; elif [ -f "$tv1" ]; then bitwords="$tv1"; else bitwords="$tv2"; fi
+
 # prep empty vars
-b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622dec_OUT=""; b622hex_IN=""; b622hex_OUT=""; b62hex_IN=""; b62hex_OUT=""; b642txt_IN=""; b642txt_OUT=""; bin2dec_IN=""; bin2dec_OUT=""; bin2hex_IN=""; bin2hex_OUT=""; bin2sha256_IN=""; bin2sha256_OUT=""; dec2b62_IN=""; dec2b62_OUT=""; dec2bin_IN=""; dec2bin_OUT=""; dec2hex_IN=""; dec2hex_OUT=""; dice_IN=""; dice_OUT=""; hex2b62_IN=""; hex2b62_OUT=""; hex2b6_IN=""; hex2b6_OUT=""; hex2bin_IN=""; hex2bin_OUT=""; hex2dec_IN=""; hex2dec_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; wif2prv_IN=""; wif2prv_OUT=""
-# prep empty vars
-EncMsgClip=""; EncMsgPass=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
+b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622dec_OUT=""; b622hex_IN=""; b622hex_OUT=""; b62hex_IN=""; b62hex_OUT=""; b642txt_IN=""; b642txt_OUT=""; bin2dec_IN=""; bin2dec_OUT=""; bin2hex_IN=""; bin2hex_OUT=""; bin2sha256_IN=""; bin2sha256_OUT=""; dec2b62_IN=""; dec2b62_OUT=""; dec2bin_IN=""; dec2bin_OUT=""; dec2hex_IN=""; dec2hex_OUT=""; dice_IN=""; dice_OUT=""; hex2b62_IN=""; hex2b62_OUT=""; hex2b6_IN=""; hex2b6_OUT=""; hex2bin_IN=""; hex2bin_OUT=""; hex2dec_IN=""; hex2dec_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; wif2prv_IN=""; wif2prv_OUT=""; prv2wif_IN=""; prv2wif_OUT=""; EncMsgClip=""; EncMsgPass=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
 #====================================================================================================================================================
 #====================================================================================================================================================
 jumpto loadvars
@@ -248,142 +253,122 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '\')  rm "$PhFN"; rm "$PhF"; exit 0;; *) jumpto mma;; esac; jumpto mma
 #=========================================================================
 mma7:
-# sha256()    get the sha256
-clear
-echo -e "==== PrvKey 2 Mnemonic ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Hex Key:"
-read Pv2Mn1
-Pv2Mn2=$(hex2bin $Pv2Mn1)
+  # Make A Name For The Master Word List That Is Easier To Recognize
+  WordListFile="$bitwords"
+  FileToStoreNumbers="$PhFN"
+  FileToStoreSeedPhrase="$PhF"
 
-if [ ${#Pv2Mn1} -eq 64 ]; then
-  Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print $1}' | cut -c1-2)
-elif [ ${#Pv2Mn1} -eq 32 ]; then
-  Pv2Mn3=$(Sha256 $Pv2Mn2 | awk '{print substr($1,1,1)}')
-else
-  clear
-  echo 'Issue In Hex Length'
-  sleep 2
-  jumpto mma
-fi
-
-Pv2Mn4=$(hex2bin $Pv2Mn3)
-Pv2Mn5=$Pv2Mn2$Pv2Mn4
-
-for (( i=0; i<${#Pv2Mn5}; i+=11 )); do
-  Pv2Mn6=${Pv2Mn5:$i:11}
-  echo $((2#${Pv2Mn6}))
-done > "$PhFN"
-
-while read PhLN; do
-  PhLN=$((PhLN + 1))
-  sed -n "${PhLN}p" "$bitwords"
-done < "$PhFN" > "$PhF"
-
-PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
-toclip "$PhStr"
-clear
-echo -e "Prv Key (hex):\n $Pv2Mn1\nEntropy (bin):\n $Pv2Mn2\nChecksum:\n hex=$Pv2Mn3\n bin=$Pv2Mn4\nEntropy w/ Checksum (bin):
- $Pv2Mn5\n==== Your seed phrase (On ClipBoard Too) ====\n$PhStr\nHit Enter When Ready"
-read junk
+  # Get Hex Private Key From User Input
+  clear; echo -e "==== PrvKey 2 Mnemonic ====\n  FYI: (Requires File bitwords.txt)\nEnter Hex Key:"; read PrvKeyHexIn #$Pv2Mn1
+  # Convert It To Binary
+  PrvKeyHexInToBin=$(hex2bin $PrvKeyHexIn)
+  # Get The CheckSum_Part (checksum is a hex value)
+  if [ ${#PrvKeyHexIn} -eq 64 ]; then PrvKeyHexInToBinChecksumPart=$(Sha256 $PrvKeyHexInToBin | awk '{print $1}' | cut -c1-2)
+    elif [ ${#PrvKeyHexIn} -eq 32 ]; then PrvKeyHexInToBinChecksumPart=$(Sha256 $PrvKeyHexInToBin | awk '{print substr($1,1,1)}')
+    else clear; echo 'Issue In Hex Length'; sleep 2; jumpto mma
+  fi
+  #Convert The Checksum_Part To Binary
+  PrvKeyHexInToBinChecksumPartAsBin=$(hex2bin $PrvKeyHexInToBinChecksumPart)
+  #Append The Checksum Part(bin) To UserInput(bin)
+  PrvKeyHexInToBinPlusChecksumPart=$PrvKeyHexInToBin$PrvKeyHexInToBinChecksumPartAsBin
+  #For every 11 chars of binary convert to decimal and store as a raw line number
+  for (( i=0; i<${#PrvKeyHexInToBinPlusChecksumPart}; i+=11 )); do
+    PrvKeyHexInToBinPlusChecksumPart11Chars=${PrvKeyHexInToBinPlusChecksumPart:$i:11}
+    echo $((2#${PrvKeyHexInToBinPlusChecksumPart11Chars}))
+  done > "$FileToStoreNumbers"
+  #For Each RawLineNumber Add 1 and find corresponding word in the word List and store these words
+  while read LineNumber; do
+    LineNumber=$((LineNumber + 1))
+    sed -n "${LineNumber}p" "$bitwords"
+  done < "$FileToStoreNumbers" > "$FileToStoreSeedPhrase"
+  #Transfer our words to a variable
+  PrvKeyHexInToBinPlusChecksumPartToPhrase=$(cat "$FileToStoreSeedPhrase" | tr '\n' ' ' | sed 's/ *$//')
+  #Put our words onto the clipboard
+  toclip "$PrvKeyHexInToBinPlusChecksumPartToPhrase"
+  #Show User Some Output
+  clear; echo -e "--Prv Key (hex)-------------\n$PrvKeyHexIn
+--Entropy (bin)-------------\n$PrvKeyHexInToBin
+--Checksum(hex)-------------\n$PrvKeyHexInToBinChecksumPart
+--Checksum(bin)-------------\n$PrvKeyHexInToBinChecksumPartAsBin
+--Entropy + Checksum (bin)--\n$PrvKeyHexInToBinPlusChecksumPart
+--Phrase (On ClipBoard)-----\n$PrvKeyHexInToBinPlusChecksumPartToPhrase
+** HIT ENTER **"; read junk
 jumpto mma
 #=========================================================================
 mma8:
-# jumpto()    allows jumpting to other places in the program (ex. MMA is the main menu)
-# bin2hex()   convert binary to hex
-# $MnPv1      User Input of their phrase seperated by 1 space per word
-# $word       Current word in my phrase
-# $bitwords   The bip39 list
-# $PhLN       The line number of current word in the $bitwords list (-1)
-# $MnPv2      line numbers of word in 11 digit binary concatenated together into one string of binary
-# $MnPv3      the bianry string without the checksum at the end
-# $MnPv4      the binary string without the checksum at the end converted to hex
-word=""; PhLn=""; Mn2Pv1=""; Mn2Pv2=""; Mn2Pv3=""; Mn2Pv4=""
-clear
-echo -e "==== Mnemonic 2 PrvKey ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Phrase:"
-read Mn2Pv1
-
-for word in $Mn2Pv1; do
-  PhLN=$(grep -n -w "$word" "$bitwords" | cut -d: -f1)
-  PhLN=$((PhLN - 1))
-  Mn2Pv2+=$(printf "%011d" $(echo "obase=2;$PhLN" | bc))
-done
-
-if [ ${#Mn2Pv2} -eq 264 ]; then
-  Mn2Pv3="${Mn2Pv2:0:-8}"
-elif [ ${#Mn2Pv2} -eq 132 ]; then
-  Mn2Pv3="${Mn2Pv2:0:-4}"
-else
-  clear
-  echo 'Length issue with words'
-  sleep 2
-  jumpto mma
-fi
-
-Mn2Pv4=$(bin2hex "$Mn2Pv3")
-toclip "$Mn2Pv4"; clear; echo -e "Seed Phrase:\n $Mn2Pv1\nEntropy w/ Checksum (bin):\n $Mn2Pv2\nEntropy no Checksum (bin):
- $Mn2Pv3\nPrv Key in hex (length= ${#Mn2Pv4}):\n $Mn2Pv4  <== [On Clipboard]\nHit Enter When Ready"
-read junk
+  # Make A Name For The Master Word List That Is Easier To Recognize
+  WordListFile="$bitwords"
+  FileToStoreNumbers="$PhFN"
+  FileToStoreSeedPhrase="$PhF"
+  # Get Phrase From User
+  clear; echo -e "==== Mnemonic 2 PrvKey ====\n  FYI: (Requires File bitwords.txt\nEnter Phrase:"; read PhraseWordStringSpaced
+  # Loop Through Each Word
+  for ThisWord in $PhraseWordStringSpaced; do
+    # Get The Raw numberic value for the line number of the word
+    ThisLineDecRaw=$(grep -n -w "$ThisWord" "$WordListFile" | cut -d: -f1)
+    # Subtract 1 from the raw number to get a usable number (this is because we start with line 1 and zero is a possibility so we subtract 1) [could probably be explained better]
+    ThisLineDecCalc=$((ThisLineDecRaw - 1))
+    # convert last number to binary
+    ThisLineDecCalcToBin=$(printf "%011d" $(echo "obase=2;$ThisLineDecCalc" | bc))
+    # add last binary to a string
+    PhraseBinaryString+="$ThisLineDecCalcToBin"
+  done
+  # Chop Off The Checksum From The Binary String
+  if [ ${#PhraseBinaryString} -eq 264 ]; then PhraseBinaryStringNoChecksum="${PhraseBinaryString:0:-8}"
+    elif [ ${#PhraseBinaryString} -eq 132 ]; then PhraseBinaryStringNoChecksum="${PhraseBinaryString:0:-4}"
+    else clear; echo 'Length issue with words'; sleep 2; jumpto mma
+  fi
+  # Convert The ChecksumFree Binary String To Hex
+  PhraseBinaryStringNoChecksumInHex=$(bin2hex "$PhraseBinaryStringNoChecksum")
+  # Put it on the clipboard
+  toclip "$PhraseBinaryStringNoChecksumInHex"
+  # Output For User
+  clear; echo -e "--Seed Phrase----------------
+$PhraseToPrvKeyHex
+--Entropy + Checksum (bin)---
+$PhraseBinaryString
+--Entropy no Checksum (bin)--
+$PhraseBinaryStringNoChecksum
+--Prv Key in hex------------- (length= ${#PhraseBinaryStringNoChecksumInHex}) [on clipboard]
+$PhraseBinaryStringNoChecksumInHex"; read junk
 jumpto mma
 #=========================================================================
 mma9:
-# jumpto()    allows jumpting to other places in the program (ex. MMA is the main menu)
-# bin2hex()   convert binary to hex
-# dec2bin()   convert dec to bin
-# bin2bin()   convert
-# sha256()    get the sha256
-# $MnPv1      User Input of their phrase seperated by 1 space per word
-# $word       Current word in my phrase
-# $bitwords   The bip39 list
-# $PhLN       The line number of current word in the $bitwords list (-1)
-# $MnPv2      line numbers of word in 11 digit binary concatenated together into one string of binary
-# $MnPv3      the bianry string without the checksum at the end
-# $MnPv4      the binary string without the checksum at the end converted to hex
-# $MnPv5      The sha256() of the 1st 32 chars of $Mn2Pv2 in binary
-word=""; PhLn=""; Mn2Pv1=""; Mn2Pv2=""; Mn2Pv3=""; Mn2Pv4=""
-clear
-echo -e "==== Mnemonic to PrvKey ====\n  FYI: (Requires File @ ~/a-me/z-share/code/bitwords.txt)\n~~~~~~~~~~~~~~~~~~~~~~~~~~~\nEnter Phrase (separated by spaces):"
-read Mn2Pv1
+#===testing====
 
-for word in $Mn2Pv1; do
-  PhLN=$(grep -n -w "$word" "$bitwords" | cut -d: -f1)
-  PhLN=$((PhLN - 1))
-  Mn2Pv2+=$(printf "%011d" $(echo "obase=2;$PhLN" | bc))
-done
-Mn2Pv3=$(bin2dec "$Mn2Pv2")
-Mn2Pv4=$(bin2hex "$Mn2Pv2")
+  # Make A Name For The Master Word List That Is Easier To Recognize
+  WordListFile="$bitwords"
+  # Display A Prompt To Get The Words From The User Seperated By Spaces In A String
+  clear; echo -e "==== Mnemonic 2 binaries ====\n  FYI: (Requires File @ bitwords.txt\nEnter Phrase:"; read PhraseWordStringSpaced
+  # Loop Through Each Word
+  for ThisWord in $PhraseWordStringSpaced; do
+    # Get The Raw numberic value for the line number of the word
+    ThisLineDecRaw=$(grep -n -w "$ThisWord" "$WordListFile" | cut -d: -f1)
+    # Subtract 1 from the raw number to get a usable number (this is because we start with line 1 and zero is a possibility so we subtract 1) [could probably be explained better]
+    ThisLineDecCalc=$((ThisLineDecRaw - 1))
+    # convert last number to binary
+    ThisLineDecCalcToBin=$(printf "%011d" $(echo "obase=2;$ThisLineDecCalc" | bc))
+    # add last binary to a string
+    PhraseBinaryString+="$ThisLineDecCalcToBin"
+  done
+  # Initialize variable to store formatted string
+  PhraseBinaryStringAsRowOf11Chars=""
 
-Mn2Pv5="${Mn2Pv2:0:32}"
-Mn2Pv5=$(Sha256 $Mn2Pv5 | awk '{print $1}' | cut -c1)
-Mn2Pv5=$(hex2bin "$Mn2Pv5")
-Mn2Pv5=$(bin2dec "$Mn2Pv5")
-Mn2Pv5=$((Mn2Pv5 + 2))
-Mn2Pv5=$(dec2bin "$Mn2Pv5")
+  # Loop through the binary string, adding a space after every 11 characters
+  for ((i = 0; i < ${#PhraseBinaryString}; i += 11)); do
+    # Extract a substring of 11 characters starting from index i
+    substring="${PhraseBinaryString:i:11}"
+    # add substing with a space to new string
+    PhraseBinaryStringSpacedEvery11Chars+="$substring "
+  done
+  # create rows
+  PhraseBinaryStringSpacedEvery11CharsInRows=$(for i in $PhraseBinaryStringSpacedEvery11Chars; do echo $i; done)
+  # send list to clipboard
+  toclip "$PhraseBinaryStringSpacedEvery11CharsInRows"
+  # show list to user
+  echo "$PhraseBinaryStringSpacedEvery11CharsInRows"
 
-Mn2Pv6="$Mn2Pv2$MnPv5"
-Mn2Pv6=$(Sha256 $Mn2Pv6 | awk '{print $1}' | cut -c1)
-Mn2Pv6=$(hex2bin "$Mn2Pv6")
-Mn2Pv6=$(bin2dec "$Mn2Pv6")
-Mn2Pv6=$((Mn2Pv6 + 2))
-Mn2Pv6=$(dec2bin "$Mn2Pv6")
-
-
-#toclip "$Mn2Pv5"
-clear
-echo -e "
-
-Seed Phrase:
-$Mn2Pv1
-Binary:
-__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|__________|
-$Mn2Pv2
-Decimal:
-$Mn2Pv3
-Hex:
-$Mn2Pv4
-First Half Of CheckSum:
-BIN= $Mn2Pv5 (DEC= $Mn2Pv6)
-
-== HIT ENTER =="
-read junk
+read -p 'Hit Enter' junk
 jumpto mma
 #====================================================================================================================================================
 #====================================================================================================================================================
