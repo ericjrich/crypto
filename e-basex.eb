@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240225_2332_est_EJR
+#20240314_1336_est_EJR
 #BaseX EJRCNC: bitcoin and other encrytion tools
 
 ### Do First ###
@@ -12,7 +12,7 @@
 pf1() { local bash2pyV1="$1"; bash2pyV2="$2"; local Pycode_SRC=$(cat <<'PYEOF'
 #!/usr/bin/env python3
 import os, pyperclip, hashlib, base58, secrets, qrcode, subprocess, sys
-from Crypto.Hash import RIPEMD160
+from Cryptodome.Hash import RIPEMD160 #OldCode= from Crypto.Hash import RIPEMD160
 # Secp256k1 Curve Parameters
 a, b, p, n = 0, 7, 2**256 - 2**32 - 2**9 - 2**8 - 2**7 - 2**6 - 2**4 - 1, 115792089237316195423570985008687907852837564279074904382605163141518161494337
 g = {'x': 55066263022277343669578718895168534326250603453777594175500187360389116729240, 'y': 32670510020758816978083085130507043184471273380659243275938904335757337482424}
@@ -373,6 +373,7 @@ jumpto mma
 #====================================================================================================================================================
 #====================================================================================================================================================
 mmb:
+crap
 clear
 echo -e "== Crypto After Gen. Menu ==
  1 | See Output
