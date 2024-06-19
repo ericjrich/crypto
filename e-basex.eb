@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240618_2056_est_EJR
+# 20240619_1114_est_EJR
 #BaseX EJRCNC: bitcoin and other encrytion tools
 
 #=========================================================================
@@ -175,6 +175,45 @@ done
 echo "$result"; }
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
+function txt2t9 {
+    local input="${1,,}"
+    local output=""
+    declare -A mapping=(
+        [ ]=0
+        [a]=1 [b]=1 [c]=1
+        [d]=2 [e]=2 [f]=2
+        [g]=3 [h]=3 [i]=3
+        [j]=4 [k]=4 [l]=4
+        [m]=5 [n]=5 [o]=5
+        [p]=6 [q]=6 [r]=6
+        [s]=7 [t]=7 [u]=7
+        [v]=8 [w]=8 [x]=8
+        [y]=9 [z]=9
+
+    )
+#og T9
+#        [ ]=1 [a]=2 [b]=2 [c]=2
+#        [d]=3 [e]=3 [f]=3
+#        [g]=4 [h]=4 [i]=4
+#        [j]=5 [k]=5 [l]=5
+#        [m]=6 [n]=6 [o]=6
+#        [p]=7 [q]=7 [r]=7 [s]=7
+#        [t]=8 [u]=8 [v]=8
+#        [w]=9 [x]=9 [y]=9 [z]=9
+
+    for (( i=0; i<${#input}; i++ )); do
+        char="${input:$i:1}"
+        if [[ "${mapping[$char]}" ]]; then
+            output+="${mapping[$char]}"
+        else
+            output+="$char"
+        fi
+    done
+
+    echo "$output"
+}
+#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
 dec2b62() { local decimal="$1"; local base62_representation; base62_representation=$(python3 - <<END
 def decimal_to_base62(decimal):
     base62_chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
@@ -233,7 +272,7 @@ if [ -d "$HOME/Desktop" ]; then logF="$HOME/Desktop/basex.txt"; else logF="/tmp/
 tv1="$HOME/a-me/z-share/code/bitwords.txt"; tv2="/etc/skel/a-me/z-share/code/bitwords.txt"; if [ ! -f "$tv1" ] && [ ! -f "$tv2" ]; then bitwords=$(dialog --title "File Selection" --fselect / 0 0 --stdout); if [ ! -f "$bitwords" ]; then echo "No valid file selected."; exit 1; fi; elif [ -f "$tv1" ]; then bitwords="$tv1"; else bitwords="$tv2"; fi
 
 # prep empty vars
-b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622dec_OUT=""; b622hex_IN=""; b622hex_OUT=""; b62hex_IN=""; b62hex_OUT=""; b642txt_IN=""; b642txt_OUT=""; bin2dec_IN=""; bin2dec_OUT=""; bin2hex_IN=""; bin2hex_OUT=""; bin2sha256_IN=""; bin2sha256_OUT=""; dec2b62_IN=""; dec2b62_OUT=""; dec2bin_IN=""; dec2bin_OUT=""; dec2hex_IN=""; dec2hex_OUT=""; dice_IN=""; dice_OUT=""; hex2b62_IN=""; hex2b62_OUT=""; hex2b6_IN=""; hex2b6_OUT=""; hex2bin_IN=""; hex2bin_OUT=""; hex2dec_IN=""; hex2dec_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; wif2prv_IN=""; wif2prv_OUT=""; prv2wif_IN=""; prv2wif_OUT=""; EncMsgClip=""; EncMsgPass=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
+txt2t9_IN=""; txt2t9_OUT=""; b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622dec_OUT=""; b622hex_IN=""; b622hex_OUT=""; b62hex_IN=""; b62hex_OUT=""; b642txt_IN=""; b642txt_OUT=""; bin2dec_IN=""; bin2dec_OUT=""; bin2hex_IN=""; bin2hex_OUT=""; bin2sha256_IN=""; bin2sha256_OUT=""; dec2b62_IN=""; dec2b62_OUT=""; dec2bin_IN=""; dec2bin_OUT=""; dec2hex_IN=""; dec2hex_OUT=""; dice_IN=""; dice_OUT=""; hex2b62_IN=""; hex2b62_OUT=""; hex2b6_IN=""; hex2b6_OUT=""; hex2bin_IN=""; hex2bin_OUT=""; hex2dec_IN=""; hex2dec_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; wif2prv_IN=""; wif2prv_OUT=""; prv2wif_IN=""; prv2wif_OUT=""; EncMsgClip=""; EncMsgPass=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
 
 #=========================================================================
 ### Main Menu ###
@@ -242,10 +281,10 @@ jumpto loadvars
 mma:
 clear
 echo -e "=== Main Menu =====================
- 1 | Enter Prv Key          **hex**                         (Bitcoin)
- 2 | Generate New Prv Key                                   (Bitcoin)
+ 1 | Generate New Prv Key                                   (Bitcoin)
+ 2 | Enter Prv Key          **hex**                         (Bitcoin)
  3 | Enter Prv Key          **bin**                         (Bitcoin)
- 4 | Generate New Prv Key                                   (Bitcoin)
+ 4 | Enter Prv Key          **dec**                         (Bitcoin)
  6 | Dependency Installer
  7 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..  (Bitcoin)
  8 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..   (Bitcoin)
@@ -259,9 +298,10 @@ echo -e "=== Main Menu =====================
  t | Clipboard OCR To Text  ** have image on clipboard already **
  \ | EXIT"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
-'1')  echo 'Enter Prv Key(hex):'; read prvkeyin; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
-'2')  pf1 '2'; jumpto mmb;;
+'1')  pf1 '2'; jumpto mmb;;
+'2')  echo 'Enter Prv Key(hex):'; read prvkeyin; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
 '3')  echo 'Enter Prv Key(bin):'; read prvkeyin; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 256 ]; then prvkeyinpadding=$((256 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(bin2hex "$prvkeyin"); pf1 '1' "$prvkeyin"; jumpto mmb;;
+'4')  echo 'Enter Prv Key(dec):'; read prvkeyin; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(dec2hex "$prvkeyin"); prvkeyin=$(printf "%064s" "$prvkeyin" | tr ' ' 'f'); pf1 '1' "$prvkeyin"; jumpto mmb;;
 '6')  GetDeps; crap;;
 '7')  jumpto mma7;;
 '8')  jumpto mma8;;
@@ -455,7 +495,7 @@ echo -e "== BASE Converter ===
  f | b6 2 hex (base6 to base16) [good for dice]
  g | roll dice as base6
  h | Binary 2 Sha_256
-
+ j | TXT 2 T9
  \ | EXIT"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') jumpto mma01 ;;
@@ -482,6 +522,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 'f') jumpto mma0f ;;
 'g') jumpto mma0g ;;
 'h') jumpto mma0h ;;
+'j') jumpto mma0j ;;
 
 '\') jumpto mma ;;
   *) jumpto mma0 ;;
@@ -703,6 +744,16 @@ bin2sha256_IN=""; bin2sha256_OUT=""
 echo 'Enter binary to be checksummed:'; read -r bin2sha256_IN
 bin2sha256_IN=$(echo -n "$bin2sha256_IN"); bin2sha256_OUT=$(Sha256 "$bin2sha256_IN"); toclip "$bin2sha256_OUT"
 echo -e "Your Checmsum (Length= ${#bin2sha256_OUT})\n  $bin2sha256_OUT\n\n* Results Available On Clipboard *"; crap
+jumpto mma0
+
+#=========================================================================
+### Sub-Menu ###
+#=========================================================================
+mma0j:
+txt2t9_IN=""; txt2t9_OUT=""
+echo 'txt2t9: Enter Your String'; read -r txt2t9_IN
+txt2t9_IN=$(echo -n "$txt2t9_IN"); txt2t9_OUT=$(txt2t9 "$txt2t9_IN"); toclip "$txt2t9_OUT"
+echo -e "txt2t9  (Length= ${#txt2t9_OUT})\n  $txt2t9_OUT\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
 
 #=========================================================================
