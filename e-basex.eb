@@ -1,20 +1,16 @@
 #!/usr/bin/env bash
-# 20240619_1114_est_EJR
-#BaseX EJRCNC: bitcoin and other encrytion tools
+# 20240620_1215_est_EJR
+# basex
 
-#=========================================================================
-### Do First: Checking For Some Dependencies ###
-#=========================================================================
+#################### Do First: Checking For Some Dependencies
 
   shopt -s dotglob
-  if ! command -v dialog &> /dev/null; then clear; echo -e "dialog is not installed. Please run the following command to install it:\n sudo apt-get install -y dialog"; exit 1; fi
-  if ! command -v xclip &> /dev/null; then echo "xclip is not installed. Please run the following command to install it:"; echo "sudo apt-get install -y xclip"; exit 1; fi
+  if ! command -v dialog &> /dev/null; then clear; echo 'RUN: sudo apt-get install -y dialog'; exit 1; fi
+  if ! command -v xclip &> /dev/null; then echo 'RUN: sudo apt-get install -y xclip'; exit 1; fi
 
-#=========================================================================
-### Functions ###
-#=========================================================================
+#################### Functions
 
-#---Python Code---#
+# Python Code
 pf1() { local bash2pyV1="$1"; bash2pyV2="$2"; local Pycode_SRC=$(cat <<'PYEOF'
 #!/usr/bin/env python3
 import os, pyperclip, hashlib, base58, secrets, qrcode, subprocess, sys
@@ -79,7 +75,7 @@ PYEOF
 local pycode_OUT=$(python3 -c "$Pycode_SRC" "$bash2pyV1" "$bash2pyV2")
 IFS='|' read -r PvKHex wif PbKHex PbKh160 PbAddr <<< "$pycode_OUT"
 }
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#--------------------
 
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
 crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
@@ -98,7 +94,7 @@ local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
 clear; echo; echo 'saving.......'; touch $logF; echo -e "=== $(date -u '+%Y-%m-%d %H:%M:%S') UTC === $(date '+%Y-%m-%d %H:%M:%S') LocalTime ===\n" >>$logF
 for i in "${TlData[@]}"; do value="${i#*: }"; qrencode -t ASCIIi "$value" >>$logF; echo -e "\n⬆️ ${i%%:*}⬆️\n" >>$logF; done
 echo -e "Prv Key:\n $PvKHex\n\nWIF(p2pkh):\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nPub Addrs:\n $PbAddr\n\nURL (Bal):\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tl2\nChecksum:\n hex=$Tl3\n bin=$Tl4\nEntropy w/ Checksum (bin):\n $Tl5\n\n==== Your seed phrase is ====\n$PhStr\n............................................" >>$logF; echo "**** Saved In File: $logF ****"; }
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#--------------------
 
 ToTerm() { local Tt1="$PvKHex"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"; toclip "$PbAddrUrl"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
@@ -110,7 +106,7 @@ local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
 clear; echo; echo '=============== QR CODES =================='
 for i in "${TtData[@]}"; do value="${i#*: }"; qrencode -t ASCIIi "$value"; echo -e "\n⬆️ ${i%%:*}⬆️\n"; done
 echo -e "Prv Key:\n $PvKHex\n\nWIF(p2pkh):\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nAddrs:\n $PbAddr\n\nURL (Bal) [On Clipboard]:\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tt2\nChecksum:\n hex=$Tt3\n bin=$Tt4\nEntropy w/ Checksum (bin):\n $Tt5\n\n==== Your seed phrase is ====\n$PhStr\n............................................"; }
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#--------------------
 
 stock_calc() { local purchase_price; local total_investment; local current_price; local quantity; local current_value; local profit_or_loss; validate_input() { while true; do read -p "$1" input; if [[ $input =~ ^[0-9]*(\.[0-9]*)?$ ]]; then break; else echo "Invalid input. Please enter a valid numeric value."; fi; done; }; clear; validate_input "Enter bitcoin start-price (per coin): "; purchase_price=$input; validate_input "Enter what we bought (in dollars): "; total_investment=$input; validate_input "Enter bitcoin end-price (per coin): "; current_price=$input; quantity=$(bc <<< "scale=8; $total_investment / $purchase_price"); current_value=$(bc <<< "scale=2; $current_price * $quantity"); profit_or_loss=$(bc <<< "scale=2; ($current_price * $quantity) - $total_investment"); clear; printf "Original Unit Value:\n \$%.2f\n" "$purchase_price"; printf "Original Investment Value:\n \$%.2f\n" "$total_investment"; printf "Current Unit Value:\n \$%.2f\n" "$current_price"; printf "Current Investment Value:\n \$%.2f\n" "$current_value"; printf "Profit OR Loss:\n \$%.2f\n" "$profit_or_loss"; echo; }
 
@@ -162,7 +158,7 @@ prv2wif() {
   local base58_result=$(echo -n "${extended_key_checksum}" | xxd -r -p | base58)    # Convert the result to base58
   echo -n "${base58_result}"       # Output the WIF
 }
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#--------------------
 
 hex2nato() { local hex=$1; local result=""; local char; for ((i = 0; i < ${#hex}; i++)); do
 	char="${hex:i:1}"
@@ -173,7 +169,7 @@ hex2nato() { local hex=$1; local result=""; local char; for ((i = 0; i < ${#hex}
 	if ((i < ${#hex} - 1)); then result+=", "; fi
 done
 echo "$result"; }
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#--------------------
 
 function txt2t9 {
     local input="${1,,}"
@@ -212,7 +208,7 @@ function txt2t9 {
 
     echo "$output"
 }
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#--------------------
 
 dec2b62() { local decimal="$1"; local base62_representation; base62_representation=$(python3 - <<END
 def decimal_to_base62(decimal):
@@ -235,7 +231,7 @@ print(base62_to_print)
 END
 )
 echo "$base62_representation"; }
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#--------------------
 
 b622dec() { local base62_string="$1"; local decimal_result; decimal_result=$(python3 - <<END
 def base62_to_decimal(base62_string):
@@ -254,29 +250,25 @@ print(decimal_output)
 END
 )
 echo "$decimal_result"; }
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#--------------------
 
-#=========================================================================
-### Set Variables ###
-#=========================================================================
+#################### Set Variables
 
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
 Dep_Apt=(python3 minimodem base58 basez dc gnupg hashalot oathtool openssl qrencode ruby-ascii85 tesseract-ocr zbar-tools espeak festival flite imagemagick feh figlet python3-pip whiptail xclip yad zenity)
 PhFN="/tmp/numbers.txt"; PhF="/tmp/seed_phrase.txt"
 logF="$HOME/Desktop/basex.txt"
 
-#basex.txt
+# basex.txt
 if [ -d "$HOME/Desktop" ]; then logF="$HOME/Desktop/basex.txt"; else logF="/tmp/basex.txt"; fi
 
-#bitword.txt -- old code: bitwords="$HOME/a-me/z-share/code/bitwords.txt"; if [ ! -f "$bitwords" ]; then bitwords=$(zenity --file-selection --title="Select Bitwords File"); if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi; fi
+# bitword.txt -- old code: bitwords="$HOME/a-me/z-share/code/bitwords.txt"; if [ ! -f "$bitwords" ]; then bitwords=$(zenity --file-selection --title="Select Bitwords File"); if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi; fi
 tv1="$HOME/a-me/z-share/code/bitwords.txt"; tv2="/etc/skel/a-me/z-share/code/bitwords.txt"; if [ ! -f "$tv1" ] && [ ! -f "$tv2" ]; then bitwords=$(dialog --title "File Selection" --fselect / 0 0 --stdout); if [ ! -f "$bitwords" ]; then echo "No valid file selected."; exit 1; fi; elif [ -f "$tv1" ]; then bitwords="$tv1"; else bitwords="$tv2"; fi
 
 # prep empty vars
 txt2t9_IN=""; txt2t9_OUT=""; b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622dec_OUT=""; b622hex_IN=""; b622hex_OUT=""; b62hex_IN=""; b62hex_OUT=""; b642txt_IN=""; b642txt_OUT=""; bin2dec_IN=""; bin2dec_OUT=""; bin2hex_IN=""; bin2hex_OUT=""; bin2sha256_IN=""; bin2sha256_OUT=""; dec2b62_IN=""; dec2b62_OUT=""; dec2bin_IN=""; dec2bin_OUT=""; dec2hex_IN=""; dec2hex_OUT=""; dice_IN=""; dice_OUT=""; hex2b62_IN=""; hex2b62_OUT=""; hex2b6_IN=""; hex2b6_OUT=""; hex2bin_IN=""; hex2bin_OUT=""; hex2dec_IN=""; hex2dec_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; wif2prv_IN=""; wif2prv_OUT=""; prv2wif_IN=""; prv2wif_OUT=""; EncMsgClip=""; EncMsgPass=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
 
-#=========================================================================
-### Main Menu ###
-#=========================================================================
+#################### MAIN MENU "MMA"
 jumpto loadvars
 mma:
 clear
@@ -318,9 +310,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 esac
 jumpto mma
 
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/
 mma7:
   # Make A Name For The Master Word List That Is Easier To Recognize
   WordListFile="$bitwords"
@@ -364,9 +354,7 @@ mma7:
 ** HIT ENTER **"; read junk
 jumpto mma
 
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/
 mma8:
   # Make A Name For The Master Word List That Is Easier To Recognize
   WordListFile="$bitwords"
@@ -405,9 +393,7 @@ $PhraseBinaryStringNoChecksum
 $PhraseBinaryStringNoChecksumInHex"; read junk
 jumpto mma
 
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/
 mma9:
 #===testing====
 
@@ -446,9 +432,7 @@ mma9:
 read -p 'Hit Enter' junk
 jumpto mma
 
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/
 mmb:
 clear
 echo -e "== Crypto After Gen. Menu ==
@@ -467,9 +451,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 esac
 jumpto mmb
 
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/
 mma0:
 clear
 echo -e "== BASE Converter ===
@@ -494,7 +476,7 @@ echo -e "== BASE Converter ===
  d | hex 2 b6 (hex TO base6)
  f | b6 2 hex (base6 to base16) [good for dice]
  g | roll dice as base6
- h | Binary 2 Sha_256
+ h | Sha_256
  j | TXT 2 T9
  \ | EXIT"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
@@ -527,238 +509,101 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '\') jumpto mma ;;
   *) jumpto mma0 ;;
 esac
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma01:
-hex2bin_IN=""; hex2bin_OUT=""
-echo 'hex2bin: Enter Your Number'; read -r hex2bin_IN
-hex2bin_IN=$(echo -n "$hex2bin_IN"); hex2bin_OUT=$(hex2bin "$hex2bin_IN"); toclip "$hex2bin_OUT"
-echo -e "hex2bin  (Length= ${#hex2bin_OUT})\n  $hex2bin_OUT\n\n* Results Available On ClipBoard *"; crap
+tv='hex2bin'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma02:
-hex2dec_IN=""; hex2dec_OUT=""
-echo 'hex2dec: Enter Your Number'; read -r hex2dec_IN
-hex2dec_IN=$(echo -n "$hex2dec_IN"); hex2dec_OUT=$(hex2dec "$hex2dec_IN"); toclip "$hex2dec_OUT"
-echo -e "hex2dec  (Length= ${#hex2dec_OUT})\n  $hex2dec_OUT\n\n* Results Available On Clipboard *"; crap
+tv='hex2dec'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma03:
-bin2hex_IN=""; bin2hex_OUT=""
-echo 'bin2hex: Enter Your Number'; read -r bin2hex_IN
-bin2hex_IN=$(echo -n "$bin2hex_IN"); bin2hex_OUT=$(bin2hex "$bin2hex_IN"); toclip "$bin2hex_OUT"
-echo -e "bin2hex  (Length= ${#bin2hex_OUT})\n  $bin2hex_OUT\n\n* Results Available On Clipboard *"; crap
+tv='bin2hex'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma04:
-bin2dec_IN=""; bin2dec_OUT=""
-echo 'bin2dec: Enter Your Number'; read -r bin2dec_IN
-bin2dec_IN=$(echo -n "$bin2dec_IN"); bin2dec_OUT=$(bin2dec "$bin2dec_IN"); toclip "$bin2dec_OUT"
-echo -e "bin2dec  (Length= ${#bin2dec_OUT})\n  $bin2dec_OUT\n\n* Results Available On Clipboard *"; crap
+tv='bin2dec'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma05:
-dec2hex_IN=""; dec2hex_OUT=""
-echo 'dec2hex: Enter Your Number'; read -r dec2hex_IN
-dec2hex_IN=$(echo -n "$dec2hex_IN"); dec2hex_OUT=$(dec2hex "$dec2hex_IN"); toclip "$dec2hex_OUT"
-echo -e "dec2hex  (Length= ${#dec2hex_OUT})\n  $dec2hex_OUT\n\n* Results Available On Clipboard *"; crap
+tv='dec2hex'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma06:
-dec2bin_IN=""; dec2bin_OUT=""
-echo 'dec2bin: Enter Your Number'; read -r dec2bin_IN
-dec2bin_IN=$(echo -n "$dec2bin_IN"); dec2bin_OUT=$(dec2bin "$dec2bin_IN"); toclip "$dec2bin_OUT"
-echo -e "dec2bin  (Length= ${#dec2bin_OUT})\n  $dec2bin_OUT\n\n* Results Available On Clipboard *"; crap
+tv='dec2bin'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma07:
-txt2b64_IN=""; txt2b64_OUT=""
-echo 'TXT 2 B64: Enter Your Text'; read -r txt2b64_IN
-txt2b64_IN=$(echo -n "$txt2b64_IN"); txt2b64_OUT=$(txt2b64 "$txt2b64_IN"); toclip "$txt2b64_OUT"
-echo -e "txt2b64  (Length= ${#txt2b64_OUT})\n  $txt2b64_OUT\n\n* Results Available On Clipboard *"; crap
+tv='txt2b64'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma08:
-b642txt_IN=""; b642txt_OUT=""
-echo 'B64 2 TXT: Enter Your Text'; read -r b642txt_IN
-b642txt_IN=$(echo -n "$b642txt_IN"); b642txt_OUT=$(b642txt "$b642txt_IN"); toclip "$b642txt_OUT"
-echo -e "b642txt  (Length= ${#b642txt_OUT})\n  $b642txt_OUT\n\n* Results Available On Clipboard *"; crap
+tv='b642txt'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma09:
-txt2hex_IN=""; txt2hex_OUT=""
-echo 'TXT 2 HEX: Enter Your Text'; read -r txt2hex_IN
-txt2hex_IN=$(echo -n "$txt2hex_IN"); txt2hex_OUT=$(txt2hex "$txt2hex_IN"); toclip "$txt2hex_OUT"
-echo -e "txt2hex  (Length= ${#txt2hex_OUT})\n  $txt2hex_OUT\n\n* Results Available On Clipboard *"; crap
+tv='txt2hex'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma00:
-hex2txt_IN=""; hex2txt_OUT=""
-echo 'HEX 2 TXT: Enter Your Text'; read -r hex2txt_IN
-hex2txt_IN=$(echo -n "$hex2txt_IN"); hex2txt_OUT=$(hex2txt "$hex2txt_IN"); toclip "$hex2txt_OUT"
-echo -e "hex2txt  (Length= ${#hex2txt_OUT})\n  $hex2txt_OUT\n\n* Results Available On Clipboard *"; crap
+tv='hex2txt'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0q:
-txt2b58_IN=""; txt2b58_OUT=""
-echo 'TXT 2 B58: Enter Your Text'; read -r txt2b58_IN
-txt2b58_IN=$(echo -n "$txt2b58_IN"); txt2b58_OUT=$(txt2b58 "$txt2b58_IN"); toclip "$txt2b58_OUT"
-echo -e "txt2b58  (Length= ${#txt2b58_OUT})\n  $txt2b58_OUT\n\n* Results Available On Clipboard *"; crap
+tv='txt2b58'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0w:
-b582txt_IN=""; b582txt_OUT=""
-echo 'B58 2 TXT: Enter Your Text'; read -r b582txt_IN
-b582txt_IN=$(echo -n "$b582txt_IN"); b582txt_OUT=$(b582txt "$b582txt_IN"); toclip "$b582txt_OUT"
-echo -e "b582txt  (Length= ${#b582txt_OUT})\n  $b582txt_OUT\n\n* Results Available On Clipboard *"; crap
+tv='b582txt'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0e:
-dec2b62_IN=""; dec2b62_OUT=""
-echo 'DEC 2 B62: Enter Your Text'; read -r dec2b62_IN
-dec2b62_IN=$(echo -n "$dec2b62_IN"); dec2b62_OUT=$(dec2b62 "$dec2b62_IN"); toclip "$dec2b62_OUT"
-echo -e "dec2b62  (Length= ${#dec2b62_OUT})\n  $dec2b62_OUT\n\n* Results Available On Clipboard *"; crap
+tv='dec2b62'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0r:
-b622dec_IN=""; b622dec_OUT=""
-echo 'B62 2 TXT: Enter Your Text'; read -r b622dec_IN
-b622dec_IN=$(echo -n "$b622dec_IN"); b622dec_OUT=$(b622dec "$b622dec_IN"); toclip "$b622dec_OUT"
-echo -e "b622dec  (Length= ${#b622dec_OUT})\n  $b622dec_OUT\n\n* Results Available On Clipboard *"; crap
+tv='b622dec'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0t:
-hex2b62_IN=""; hex2b62_OUT=""
-echo 'HEX 2 B62: Enter Your HEX'; read -r hex2b62_IN
-hex2b62_IN=$(echo -n "$hex2b62_IN"); hex2b62_OUT=$(hex2b62 "$hex2b62_IN"); toclip "$hex2b62_OUT"
-echo -e "hex2b62  (Length= ${#hex2b62_OUT})\n  $hex2b62_OUT\n\n* Results Available On Clipboard *"; crap
+tv='hex2b62'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0y:
-b622hex_IN=""; b622hex_OUT=""
-echo 'B62 2 HEX: Enter Your B62'; read -r b622hex_IN
-b622hex_IN=$(echo -n "$b622hex_IN"); b622hex_OUT=$(b622hex "$b622hex_IN"); toclip "$b622hex_OUT"
-echo -e "b622hex  (Length= ${#b622hex_OUT})\n  $b622hex_OUT\n\n* Results Available On Clipboard *"; crap
+tv='b622hex'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0a:
-wif2prv_IN=""; wif2prv_OUT=""
-echo 'WIF 2 PRV (BASE58 WIF TO HEX Prv KEY)'; read -r wif2prv_IN
-wif2prv_IN=$(echo -n "$wif2prv_IN"); wif2prv_OUT=$(wif2prv "$wif2prv_IN"); toclip "$wif2prv_OUT"
-echo -e "WIF 2 PRV  (Length= ${#wif2prv_OUT})\n  $wif2prv_OUT\n\n* Results Available On Clipboard *"; crap
+tv='wif2prv'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0s:
-prv2wif_IN=""; prv2wif_OUT=""
-echo 'PRV 2 WIF (HEX Prv KEY -TO- BASE58 WIF)'; read -r prv2wif_IN
-prv2wif_IN=$(echo -n "$prv2wif_IN"); prv2wif_OUT=$(prv2wif "$prv2wif_IN"); toclip "$prv2wif_OUT"
-echo -e "WIF 2 PRV  (Length= ${#prv2wif_OUT})\n  $prv2wif_OUT\n\n* Results Available On Clipboard *"; crap
+tv='prv2wif'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0d:
-hex2b6_IN=""; hex2b6_OUT=""
-echo 'hex to b6'; read -r hex2b6_IN
-hex2b6_IN=$(echo -n "$hex2b6_IN"); hex2b6_OUT=$(hex2b6 "$hex2b6_IN"); toclip "$hex2b6_OUT"
-echo -e "hex to b6 (Length= ${#hex2b6_OUT})\n  $hex2b6_OUT\n\n* Results Available On Clipboard *"; crap
+tv='hex2b6'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0f:
-b62hex_IN=""; b62hex_OUT=""
-echo 'b6 to hex (use with dice too [6 on di is 0, 99 rolls]'; read -r b62hex_IN
-b62hex_IN=$(echo -n "$b62hex_IN"); b62hex_OUT=$(b62hex "$b62hex_IN"); toclip "$b62hex_OUT"
-echo -e "b6 to hex (Length= ${#b62hex_OUT})\n  $b62hex_OUT\n\n* Results Available On Clipboard *"; crap
+tv='b62hex'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0g:
 dice_IN=""; dice_OUT=""; clear; dice; toclip "$dice_OUT"
 echo -e "\n----------------------------------------\nDice As Base 6 (Length= ${#dice_OUT})\n  $dice_OUT\n\n* Results Available On Clipboard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0h:
-bin2sha256_IN=""; bin2sha256_OUT=""
-echo 'Enter binary to be checksummed:'; read -r bin2sha256_IN
-bin2sha256_IN=$(echo -n "$bin2sha256_IN"); bin2sha256_OUT=$(Sha256 "$bin2sha256_IN"); toclip "$bin2sha256_OUT"
-echo -e "Your Checmsum (Length= ${#bin2sha256_OUT})\n  $bin2sha256_OUT\n\n* Results Available On Clipboard *"; crap
+tv='Sha256'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMA0/
 mma0j:
-txt2t9_IN=""; txt2t9_OUT=""
-echo 'txt2t9: Enter Your String'; read -r txt2t9_IN
-txt2t9_IN=$(echo -n "$txt2t9_IN"); txt2t9_OUT=$(txt2t9 "$txt2t9_IN"); toclip "$txt2t9_OUT"
-echo -e "txt2t9  (Length= ${#txt2t9_OUT})\n  $txt2t9_OUT\n\n* Results Available On ClipBoard *"; crap
+tv='txt2t9'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
 
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/
 mmam:
 clear
 echo -e "Current Password: $EncMsgPass
@@ -790,105 +635,51 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '\') jumpto mma ;;
   *) jumpto mmam ;;
 esac
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam1:
 EncMsgPass=""; echo -e "Enter password:"; read -r EncMsgPass; EncMsgPass=$(echo -n "$EncMsgPass")
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam2:
-txt2ssl_IN=""; txt2ssl_OUT=""
-echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"; while IFS= read -r line; do txt2ssl_IN="${txt2ssl_IN}${line}"$'\n'; done
-txt2ssl_IN=$(echo -n "$txt2ssl_IN"); txt2ssl_OUT=$(txt2ssl "$txt2ssl_IN"); toclip "$txt2ssl_OUT"
-clear; echo -e "Encrypted Message (also on clipboard now):\n\n$txt2ssl_OUT"; crap
+tv='txt2ssl'; echo "${tv}: Input Data (Finish with a new line and Ctrl-D)"; while IFS= read -r line; do tvi="${tvi}${line}"$'\n'; done; tvi=$(echo -n "$tvi"); tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam3:
-ssl2txt_IN=""; ssl2txt_OUT=""
-echo -e "What's the encrypted message you want to decode?"; read -r ssl2txt_IN
-ssl2txt_IN=$(echo -n "$ssl2txt_IN"); ssl2txt_OUT=$(ssl2txt "$ssl2txt_IN"); toclip "$ssl2txt_OUT"
-clear; echo -e "Decrypted Message (also on clipboard now):\n\n$ssl2txt_OUT"; crap
+tv='ssl2txt'; echo "${tv}: Input Data"; read -r tvi; tvi=$(echo -n "$tvi"); tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam4:
-txt2b64_IN=""; txt2b64_OUT=""
-echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"; while IFS= read -r line; do txt2b64_IN="${txt2b64_IN}${line}"$'\n'; done
-txt2b64_IN=$(echo -n "$txt2b64_IN"); txt2b64_OUT=$(txt2b64 "$txt2b64_IN"); toclip "$txt2b64_OUT"
-clear; echo -e "Encrypted Message (also on clipboard now):\n\n$txt2b64_OUT"; crap
+tv='txt2b64'; echo "${tv}: Input Data (Finish with a new line and Ctrl-D)"; while IFS= read -r line; do tvi="${tvi}${line}"$'\n'; done; tvi=$(echo -n "$tvi"); tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crapjumpto mmam
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam5:
-b642txt_IN=""; b642txt_OUT=""
-echo -e "What's the encrypted message you want to decode?"; read -r b642txt_IN
-b642txt_IN=$(echo -n "$b642txt_IN"); b642txt_OUT=$(b642txt "$b642txt_IN"); toclip "$b642txt_OUT"
-clear; echo -e "Decrypted Message (also on clipboard now):\n\n$b642txt_OUT"; crap
+tv='b642txt'; echo "${tv}: Input Data"; read -r tvi; tvi=$(echo -n "$tvi"); tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam6:
-txt2hex_IN=""; txt2hex_OUT=""
-echo -e "Enter Raw Message (Press Ctrl+D On New Line When Done):"; while IFS= read -r line; do txt2hex_IN="${txt2hex_IN}${line}"$'\n'; done
-txt2hex_IN=$(echo -n "$txt2hex_IN"); txt2hex_OUT=$(txt2hex "$txt2hex_IN"); toclip "$txt2hex_OUT"
-clear; echo -e "Decrypted Message (also on clipboard now):\n\n$txt2hex_OUT"; crap
+tv='txt2hex'; echo "${tv}: Input Data (Finish with a new line and Ctrl-D)"; while IFS= read -r line; do tvi="${tvi}${line}"$'\n'; done; tvi=$(echo -n "$tvi"); tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam7:
-hex2txt_IN=""; hex2txt_OUT=""
-echo -e "Enter Hex Message (Press Ctrl+D On New Line When Done):"; while IFS= read -r line; do hex2txt_IN="${hex2txt_IN}${line}"$'\n'; done
-hex2txt_IN=$(echo -n "$hex2txt_IN"); hex2txt_OUT=$(hex2txt "$hex2txt_IN"); toclip "$hex2txt_OUT"
-clear; echo -e "Encrypted Message (also on clipboard now):\n\n$hex2txt_OUT"; crap
+tv='hex2txt'; echo "${tv}: Input Data (Finish with a new line and Ctrl-D)"; while IFS= read -r line; do tvi="${tvi}${line}"$'\n'; done; tvi=$(echo -n "$tvi"); tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam8:
 echo "$Das_Tables"; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam9:
 makeclipQR; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmam0:
 readclipQR; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 mmamm:
-EncMsgClip=$(xclip -o -selection clipboard); sleep .1; clear; echo -e "=========Status Report From En/Decoder  ============\n****Password****\n$EncMsgPass\n---------------------------------------\n****EnCryptSSL Input****\n$txt2ssl_IN\n****EnCryptSSL Output****\n$txt2ssl_OUT\n****DeCryptSSL Input****\n$ssl2txt_IN\n****DeCryptSSL Output****\n$ssl2txt_OUT\n---------------------------------------\n****EnCrypt64 Input****\n$txt2b64_IN\n****EnCrypt64 Output****\n$txt2b64_OUT\n****DeCrypt64 Input****\n$b642txt_IN\n****DeCrypt64 Output****\n$b642txt_OUT\n---------------------------------------\n****txt2hex Input****\n$txt2hex_IN\n****txt2hex Output****\n$txt2hex_OUT\n****hex2txt Input****\n$hex2txt_IN\n****hex2txt Output****\n$hex2txt_OUT\n---------------------------------------\n****ClipBoard****\n$EncMsgClip\n---------------------------------------\n"; crap
+EncMsgClip=$(xclip -o -selection clipboard); sleep .1; clear; echo -e "=========Status Report ============\n****Password****\n$EncMsgPass\n---------------------------------------\n****ClipBoard****\n$EncMsgClip\n---------------------------------------\n"; crap
 jumpto mmam
-
-#=========================================================================
-### Sub-Menu ###
-#=========================================================================
+#################### SubMenu: MMA/MMAM/
 loadvars:
 Das_Tables=$(cat <<'AsciiEOF'
 --ASCII TABLE------------------------------------------------------------------------------------------------
@@ -1041,6 +832,4 @@ AsciiEOF
 )
 jumpto mma
 
-#=========================================================================
-### END ###
-#=========================================================================
+#################### END ####################
