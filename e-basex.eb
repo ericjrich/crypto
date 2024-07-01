@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240701_1855_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240701_1907_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -107,8 +107,8 @@ echo -e "**********$(date -u '+%Y-%m-%d %H:%M:%S') UTC **************** $(date '
 *Checksum*        hex=$Tl3   bin= $Tl4
 *Entropy & Chksm* $Tl5
 *SeedPhrase*      $PhStr
-*Balance*         $balnow\t\tSATS
-*Volume*          $balvol\t\tSATS
+*Balance*         $balnow  \tSATS
+*Volume*          $balvol  \tSATS
 *************************************************************************************************************************************************************************
 " | tee -a "$logF" "$logF1"; echo "**** Saved In File: $logF & "$logF1" ****"; }
 #--------------------
@@ -136,8 +136,8 @@ echo -e "***********************************************************************
 *Checksum*        hex= $Tt3    bin=$Tt4
 *Entropy & Chksm* $Tt5
 *SeedPhrase*      $PhStr
-*Balance*         $balnow\t\tSATS
-*Volume*          $balvol\t\tSATS
+*Balance*         $balnow  \tSATS
+*Volume*          $balvol  \tSATS
 *************************************************************************************************************************************************************************
 "; }
 #--------------------
