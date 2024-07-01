@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240620_1215_est_EJR
+# 20240701_1434_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -83,33 +83,66 @@ GetDeps() { for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then
 toclip() { echo -n "$1" | xclip -selection clipboard; }
 makeclipQR() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; echo "$In1"; qrencode -t ANSIUTF8 "$In1"; }
 readclipQR() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "Decoded text from QR code:"; echo "$Out"; rm /tmp/clipboard.png; }
-
-ToLog() { local Tl1="$PvKHex"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"
+#--------------------
+ToLogs() { local Tl1="$PvKHex"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
-local Tl2=$(hex2bin $Tl1); local Tl3=$(Sha256 $Tl2 | awk '{print $1}' | cut -c1-2); local Tl4=$(hex2bin $Tl3); local Tl5=$Tl2$Tl4
+local Tl2=$(hex2bin $Tl1); local Tl3=$(Sha256bits $Tl2 | awk '{print $1}' | cut -c1-2); local Tl4=$(hex2bin $Tl3); local Tl5=$Tl2$Tl4
 local TlData=("Private Key: $PvKHex" "WIF(p2pkh): $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
 for (( i=0; i<${#Tl5}; i+=11 )); do Tl6=${Tl5:$i:11}; echo $((2#${Tl6})); done > "$PhFN"
 while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
 local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
-clear; echo; echo 'saving.......'; touch $logF; echo -e "=== $(date -u '+%Y-%m-%d %H:%M:%S') UTC === $(date '+%Y-%m-%d %H:%M:%S') LocalTime ===\n" >>$logF
+clear; echo; echo 'saving.......'; touch $logF $logF1
 for i in "${TlData[@]}"; do value="${i#*: }"; qrencode -t ASCIIi "$value" >>$logF; echo -e "\n⬆️ ${i%%:*}⬆️\n" >>$logF; done
-echo -e "Prv Key:\n $PvKHex\n\nWIF(p2pkh):\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nPub Addrs:\n $PbAddr\n\nURL (Bal):\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tl2\nChecksum:\n hex=$Tl3\n bin=$Tl4\nEntropy w/ Checksum (bin):\n $Tl5\n\n==== Your seed phrase is ====\n$PhStr\n............................................" >>$logF; echo "**** Saved In File: $logF ****"; }
+echo -e "**********$(date -u '+%Y-%m-%d %H:%M:%S') UTC **************** $(date '+%Y-%m-%d %H:%M:%S') LocalTime ************
+*UserOGin*        $userOGin
+*UserOGout*       $userOGout
+*UserOGout1*      $userOGout1
+*Prv Key*         $PvKHex
+*WIF(p2pkh)*      $wif
+*Pub Key*         $PbKHex
+*Pub Key Hash160* $PbKh160
+*Pub Addrs*       $PbAddr
+*URL*             $PbAddrUrl
+*Entropy (bin)*   $Tl2
+*Checksum*        hex=$Tl3   bin= $Tl4
+*Entropy & Chksm* $Tl5
+*SeedPhrase*      $PhStr
+*Balance*         $balnow\tSATS
+*Volume*          $balvol\tSATS
+*************************************************************************************************************************************************************************
+" | tee -a "$logF" "$logF1"; echo "**** Saved In File: $logF & "$logF1" ****"; }
 #--------------------
 
 ToTerm() { local Tt1="$PvKHex"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"; toclip "$PbAddrUrl"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
-local Tt2=$(hex2bin $Tt1); local Tt3=$(Sha256 $Tt2 | awk '{print $1}' | cut -c1-2); local Tt4=$(hex2bin $Tt3); local Tt5=$Tt2$Tt4
+local Tt2=$(hex2bin $Tt1); local Tt3=$(Sha256bits $Tt2 | awk '{print $1}' | cut -c1-2); local Tt4=$(hex2bin $Tt3); local Tt5=$Tt2$Tt4
 local TtData=("Private Key: $PvKHex" "WIF(p2pkh): $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
 for (( i=0; i<${#Tt5}; i+=11 )); do Tt6=${Tt5:$i:11}; echo $((2#${Tt6})); done > "$PhFN"
 while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
 local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
 clear; echo; echo '=============== QR CODES =================='
 for i in "${TtData[@]}"; do value="${i#*: }"; qrencode -t ASCIIi "$value"; echo -e "\n⬆️ ${i%%:*}⬆️\n"; done
-echo -e "Prv Key:\n $PvKHex\n\nWIF(p2pkh):\n $wif\n\nPub Key:\n $PbKHex\n\nPub Key Hash160:\n $PbKh160\n\nAddrs:\n $PbAddr\n\nURL (Bal) [On Clipboard]:\n $PbAddrUrl\n-----------------------------------------\nEntropy (bin):\n $Tt2\nChecksum:\n hex=$Tt3\n bin=$Tt4\nEntropy w/ Checksum (bin):\n $Tt5\n\n==== Your seed phrase is ====\n$PhStr\n............................................"; }
+echo -e "*************************************************************************************************************************************************************************
+*UserOGin*        $userOGin
+*UserOGout*       $userOGout
+*UserOGout1*      $userOGout1
+*Prv Key*         $PvKHex
+*WIF(p2pkh)*      $wif
+*Pub Key*         $PbKHex
+*Pub Key Hash160* $PbKh160
+*Pub Addrs*       $PbAddr
+*URL [Copied]*    $PbAddrUrl
+*Entropy (bin)*   $Tt2
+*Checksum*        hex= $Tt3    bin=$Tt4
+*Entropy & Chksm* $Tt5
+*SeedPhrase*      $PhStr
+*Balance*         $balnow\tSATS
+*Volume*          $balvol\tSATS
+*************************************************************************************************************************************************************************
+"; }
 #--------------------
 
 stock_calc() { local purchase_price; local total_investment; local current_price; local quantity; local current_value; local profit_or_loss; validate_input() { while true; do read -p "$1" input; if [[ $input =~ ^[0-9]*(\.[0-9]*)?$ ]]; then break; else echo "Invalid input. Please enter a valid numeric value."; fi; done; }; clear; validate_input "Enter bitcoin start-price (per coin): "; purchase_price=$input; validate_input "Enter what we bought (in dollars): "; total_investment=$input; validate_input "Enter bitcoin end-price (per coin): "; current_price=$input; quantity=$(bc <<< "scale=8; $total_investment / $purchase_price"); current_value=$(bc <<< "scale=2; $current_price * $quantity"); profit_or_loss=$(bc <<< "scale=2; ($current_price * $quantity) - $total_investment"); clear; printf "Original Unit Value:\n \$%.2f\n" "$purchase_price"; printf "Original Investment Value:\n \$%.2f\n" "$total_investment"; printf "Current Unit Value:\n \$%.2f\n" "$current_price"; printf "Current Investment Value:\n \$%.2f\n" "$current_value"; printf "Profit OR Loss:\n \$%.2f\n" "$profit_or_loss"; echo; }
-
 
 txt2ssl() { local In="$1"; local Out=$(echo -n "$In" | openssl aes-256-cbc -a -salt -pass pass:"$EncMsgPass" -pbkdf2); echo -n "$Out"; }
 ssl2txt() { local In="$1"; local Out=$(echo -n "$In" | openssl aes-256-cbc -d -a -pass pass:"$EncMsgPass" -pbkdf2); echo -n "$Out"; }
@@ -143,7 +176,10 @@ hex2bin() { local hex=$1; for ((i=0; i<${#hex}; i++)); do case ${hex:$i:1} in 0)
 dec2hex() { local dec="$1"; local hex=""; hex=$(echo "ibase=10; obase=16; $dec" | bc); echo -n "${hex,,}"; }
 hex2dec() { local hex="$1"; local bin=$(hex2bin "$hex"); local dec=$(bin2dec "$bin"); echo -n "$dec"; }
 
-Sha256() { echo -n $1 | shasum -a 256 -0 | tr -d '\n\\'; }
+Sha256bits() { echo -n $1 | shasum -a 256 -0 | tr -d '\n\\'; } #ALSO WORKS: Sha256bits() { echo -n $1 | shasum -a 256 -0 | awk '{print $1}'; }
+
+txt2sha256sum() { echo -n "$1" | sha256sum | awk '{print $1}'; } # same= { echo -n "$1" | shasum -a 256 | awk '{print $1}'; }
+txt2sha512sum() { echo -n "$1" | sha512sum | awk '{print $1}'; }
 
 wif2prv() { local IN="$1"; local OUT; OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\'); OUT=${OUT,,}; OUT=${OUT:2}; OUT=${OUT:0:64}; echo -n "$OUT"; }
 prv2wif() {
@@ -252,15 +288,29 @@ END
 echo "$decimal_result"; }
 #--------------------
 
+balnvol() {
+# Replace this with your actual wallet address
+local ADDRESS="$1"
+local RESPONSE=$(curl -sSL "https://mempool.space/api/address/$ADDRESS")
+
+# Extract balance and total received from JSON response using jq
+local TOTAL_RECEIVED=$(echo "$RESPONSE" | jq -r '.chain_stats.funded_txo_sum')
+local SPENT=$(echo "$RESPONSE" | jq -r '.chain_stats.spent_txo_sum')
+local BALANCE=$((TOTAL_RECEIVED - SPENT))
+
+balnow="$BALANCE"
+balvol="$TOTAL_RECEIVED"
+}
+#--------------------
+
 #################### Set Variables
 
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
 Dep_Apt=(python3 minimodem base58 basez dc gnupg hashalot oathtool openssl qrencode ruby-ascii85 tesseract-ocr zbar-tools espeak festival flite imagemagick feh figlet python3-pip whiptail xclip yad zenity)
 PhFN="/tmp/numbers.txt"; PhF="/tmp/seed_phrase.txt"
-logF="$HOME/Desktop/basex.txt"
-
 # basex.txt
-if [ -d "$HOME/Desktop" ]; then logF="$HOME/Desktop/basex.txt"; else logF="/tmp/basex.txt"; fi
+if [ -d "$HOME/Desktop" ]; then logF="$HOME/Desktop/basexQR.txt"; else logF="/tmp/basexQR.txt"; fi
+if [ -d "$HOME/Desktop" ]; then logF1="$HOME/Desktop/basexTXT.txt"; else logF1="/tmp/basexTXT.txt"; fi
 
 # bitword.txt -- old code: bitwords="$HOME/a-me/z-share/code/bitwords.txt"; if [ ! -f "$bitwords" ]; then bitwords=$(zenity --file-selection --title="Select Bitwords File"); if [ $? -eq 1 ]; then echo "User canceled the selection. Exiting."; exit 1; fi; fi
 tv1="$HOME/a-me/z-share/code/bitwords.txt"; tv2="/etc/skel/a-me/z-share/code/bitwords.txt"; if [ ! -f "$tv1" ] && [ ! -f "$tv2" ]; then bitwords=$(dialog --title "File Selection" --fselect / 0 0 --stdout); if [ ! -f "$bitwords" ]; then echo "No valid file selected."; exit 1; fi; elif [ -f "$tv1" ]; then bitwords="$tv1"; else bitwords="$tv2"; fi
@@ -271,13 +321,15 @@ txt2t9_IN=""; txt2t9_OUT=""; b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622d
 #################### MAIN MENU "MMA"
 jumpto loadvars
 mma:
+userOGin=''; userOGout=''; userOGout1=''
 clear
 echo -e "=== Main Menu =====================
  1 | Generate New Prv Key                                   (Bitcoin)
  2 | Enter Prv Key          **hex**                         (Bitcoin)
  3 | Enter Prv Key          **bin**                         (Bitcoin)
  4 | Enter Prv Key          **dec**                         (Bitcoin)
- 6 | Dependency Installer
+ 5 | Enter WIF              **wif 51 to 52 char b58**       (Bitcoin)
+ 6 | Enter String           **sha256sum**                   (Bitcoin)
  7 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..  (Bitcoin)
  8 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..   (Bitcoin)
  9 | Mnemonic 2 Prv (testings)      ..REQUIRES MNEMONIC..   (Bitcoin)
@@ -288,13 +340,15 @@ echo -e "=== Main Menu =====================
  e | Stock Calc
  r | CLipboard  QR To Text  ** have image on clipboard already **
  t | Clipboard OCR To Text  ** have image on clipboard already **
+ p | Dependency Installer
  \ | EXIT"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1')  pf1 '2'; jumpto mmb;;
-'2')  echo 'Enter Prv Key(hex):'; read prvkeyin; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
-'3')  echo 'Enter Prv Key(bin):'; read prvkeyin; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 256 ]; then prvkeyinpadding=$((256 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(bin2hex "$prvkeyin"); pf1 '1' "$prvkeyin"; jumpto mmb;;
-'4')  echo 'Enter Prv Key(dec):'; read prvkeyin; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(dec2hex "$prvkeyin"); prvkeyin=$(printf "%064s" "$prvkeyin" | tr ' ' 'f'); pf1 '1' "$prvkeyin"; jumpto mmb;;
-'6')  GetDeps; crap;;
+'2')  echo -e "*Largest (HEX)* (64 chars)= fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140\n\nEnter Prv Key (hex):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
+'3')  echo -e "*Largest (BIN)* (256 chars)= 1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111010111010101011101101110011100110101011110100100010100000001110111011111111010010010111101000110011010000001101100100000101000000\n\nEnter Prv Key (bin):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 256 ]; then prvkeyinpadding=$((256 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(bin2hex "$prvkeyin"); userOGout="$prvkeyin"; pf1 '1' "$prvkeyin"; jumpto mmb;;
+'4')  echo -e "*Largest (DEC)* (78 chars)= 115792089237316195423570985008687907852837564279074904382605163141518161494336\n\nEnter Prv Key (dec):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(dec2hex "$prvkeyin"); prvkeyin=$(printf "%064s" "$prvkeyin" | tr ' ' 'f'); userOGout="$prvkeyin"; pf1 '1' "$prvkeyin"; jumpto mmb;;
+'5')  echo -e "\n\nEnter WIF (b58 51-52 chars):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=$(wif2prv "$prvkeyin"); userOGout="$prvkeyin"; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
+'6')  echo -e "\n\nEnter String For Conversion (sha256sum):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=$(txt2sha256sum "$prvkeyin"); userOGout="$prvkeyin"; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
 '7')  jumpto mma7;;
 '8')  jumpto mma8;;
 '9')  jumpto mma9;;
@@ -305,6 +359,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 'e')  stock_calc; crap;;
 'r')  qrclip2txt; crap;;
 't')  ocrclip2txt; crap;;
+'p')  GetDeps; crap;;
 '\')  rm "$PhFN"; rm "$PhF"; exit 0;;
   *)  jumpto mma;;
 esac
@@ -322,8 +377,8 @@ mma7:
   # Convert It To Binary
   PrvKeyHexInToBin=$(hex2bin $PrvKeyHexIn)
   # Get The CheckSum_Part (checksum is a hex value)
-  if [ ${#PrvKeyHexIn} -eq 64 ]; then PrvKeyHexInToBinChecksumPart=$(Sha256 $PrvKeyHexInToBin | awk '{print $1}' | cut -c1-2)
-    elif [ ${#PrvKeyHexIn} -eq 32 ]; then PrvKeyHexInToBinChecksumPart=$(Sha256 $PrvKeyHexInToBin | awk '{print substr($1,1,1)}')
+  if [ ${#PrvKeyHexIn} -eq 64 ]; then PrvKeyHexInToBinChecksumPart=$(Sha256bits $PrvKeyHexInToBin | awk '{print $1}' | cut -c1-2)
+    elif [ ${#PrvKeyHexIn} -eq 32 ]; then PrvKeyHexInToBinChecksumPart=$(Sha256bits $PrvKeyHexInToBin | awk '{print substr($1,1,1)}')
     else clear; echo 'Issue In Hex Length'; sleep 2; jumpto mma
   fi
   #Convert The Checksum_Part To Binary
@@ -434,18 +489,19 @@ jumpto mma
 
 #################### SubMenu: MMA/
 mmb:
+balnvol "$PbAddr"
 clear
 echo -e "== Crypto After Gen. Menu ==
  1 | See Output
- 2 | See Output AND Save To $logF
- 3 | Just Save To $logF
- 4 | Delete $logF
+ 2 | See Output AND Save To $logF & $logF1
+ 3 | Just Save To $logF & $logF1
+ 4 | Delete $logF & $logF1
  \ | Back To Main Menu"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') ToTerm; crap;;
-'2') ToLog; ToTerm; crap;;
-'3') ToLog;;
-'4') rm "$logF";;
+'2') ToLogs; ToTerm; crap;;
+'3') ToLogs;;
+'4') rm "$logF" "$logF1";;
 '\') jumpto mma;;
   *) jumpto mmb;;
 esac
@@ -596,7 +652,7 @@ echo -e "\n----------------------------------------\nDice As Base 6 (Length= ${#
 jumpto mma0
 #################### SubMenu: MMA/MMA0/
 mma0h:
-tv='Sha256'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
+tv='Sha256bits'; echo "${tv}: Input Data"; read -r tvi; tvo=$(${tv} "$tvi"); toclip "$tvo"; echo -e "${tv} (Length= ${#tvo})\n  $tvo\n\n* Results Available On ClipBoard *"; crap
 jumpto mma0
 #################### SubMenu: MMA/MMA0/
 mma0j:
@@ -815,16 +871,16 @@ Das_Tables=$(cat <<'AsciiEOF'
 
 ===============================================================================
 
-*Points On Elliptical Curve*
+*Points On Elliptical Curve* (78 chars)
 115792089237316195423570985008687907852837564279074904382605163141518161494337
 
-*Largest (DEC)*
+*Largest (DEC)* (78 chars)
 115792089237316195423570985008687907852837564279074904382605163141518161494336
 
-*Largest (BIN)*
+*Largest (BIN)* (256 chars)
 1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111010111010101011101101110011100110101011110100100010100000001110111011111111010010010111101000110011010000001101100100000101000000
 
-*Largest (HEX)*
+*Largest (HEX)* (64 chars)
 fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140
 
 ===============================================================================
