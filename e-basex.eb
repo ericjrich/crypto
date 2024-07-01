@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240701_1907_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240701_1913_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -107,8 +107,8 @@ echo -e "**********$(date -u '+%Y-%m-%d %H:%M:%S') UTC **************** $(date '
 *Checksum*        hex=$Tl3   bin= $Tl4
 *Entropy & Chksm* $Tl5
 *SeedPhrase*      $PhStr
-*Balance*         $balnow  \tSATS
-*Volume*          $balvol  \tSATS
+*Balance*         $balnow  \t\t\tBTC
+*Volume*          $balvol  \t\t\tBTC
 *************************************************************************************************************************************************************************
 " | tee -a "$logF" "$logF1"; echo "**** Saved In File: $logF & "$logF1" ****"; }
 #--------------------
@@ -136,8 +136,8 @@ echo -e "***********************************************************************
 *Checksum*        hex= $Tt3    bin=$Tt4
 *Entropy & Chksm* $Tt5
 *SeedPhrase*      $PhStr
-*Balance*         $balnow  \tSATS
-*Volume*          $balvol  \tSATS
+*Balance*         $balnow  \t\t\tBTC
+*Volume*          $balvol  \t\t\tBTC
 *************************************************************************************************************************************************************************
 "; }
 #--------------------
@@ -298,8 +298,11 @@ local TOTAL_RECEIVED=$(echo "$RESPONSE" | jq -r '.chain_stats.funded_txo_sum')
 local SPENT=$(echo "$RESPONSE" | jq -r '.chain_stats.spent_txo_sum')
 local BALANCE=$((TOTAL_RECEIVED - SPENT))
 
-balnow="$BALANCE"
-balvol="$TOTAL_RECEIVED"
+TOTAL_RECEIVED_BTC=$(echo "scale=8; $TOTAL_RECEIVED / 100000000" | bc)
+BALANCE_BTC=$(echo "scale=8; $BALANCE / 100000000" | bc)
+
+balnow="$BALANCE_BTC"
+balvol="$TOTAL_RECEIVED_BTC"
 }
 #--------------------
 
