@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240701_1434_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240701_1850_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -84,7 +84,7 @@ toclip() { echo -n "$1" | xclip -selection clipboard; }
 makeclipQR() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; echo "$In1"; qrencode -t ANSIUTF8 "$In1"; }
 readclipQR() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "Decoded text from QR code:"; echo "$Out"; rm /tmp/clipboard.png; }
 #--------------------
-ToLogs() { local Tl1="$PvKHex"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"
+ToLogs() { local Tl1="$PvKHex"; local PhLN; PbAddrUrl="https://mempool.space/address/$PbAddr"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
 local Tl2=$(hex2bin $Tl1); local Tl3=$(Sha256bits $Tl2 | awk '{print $1}' | cut -c1-2); local Tl4=$(hex2bin $Tl3); local Tl5=$Tl2$Tl4
 local TlData=("Private Key: $PvKHex" "WIF(p2pkh): $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
@@ -113,7 +113,7 @@ echo -e "**********$(date -u '+%Y-%m-%d %H:%M:%S') UTC **************** $(date '
 " | tee -a "$logF" "$logF1"; echo "**** Saved In File: $logF & "$logF1" ****"; }
 #--------------------
 
-ToTerm() { local Tt1="$PvKHex"; local PhLN; local PbAddrUrl="https://mempool.space/address/$PbAddr"; toclip "$PbAddrUrl"
+ToTerm() { local Tt1="$PvKHex"; local PhLN; PbAddrUrl="https://mempool.space/address/$PbAddr"; toclip "$PbAddrUrl"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
 local Tt2=$(hex2bin $Tt1); local Tt3=$(Sha256bits $Tt2 | awk '{print $1}' | cut -c1-2); local Tt4=$(hex2bin $Tt3); local Tt5=$Tt2$Tt4
 local TtData=("Private Key: $PvKHex" "WIF(p2pkh): $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL (Bal): $PbAddrUrl")
@@ -490,22 +490,23 @@ jumpto mma
 #################### SubMenu: MMA/
 mmb:
 balnvol "$PbAddr"
+mmbalt:
 clear
-echo -e "== Crypto After Gen. Menu ==
- 1 | See Output
- 2 | See Output AND Save To $logF & $logF1
- 3 | Just Save To $logF & $logF1
- 4 | Delete $logF & $logF1
+ToTerm
+echo -e "
+======= Crypto After Gen. Menu ====================================================================================
+ 1 | Just Save To $logF & $logF1
+ 2 | Delete $logF & $logF1
+ 3 | Open URL
  \ | Back To Main Menu"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
-'1') ToTerm; crap;;
-'2') ToLogs; ToTerm; crap;;
-'3') ToLogs;;
-'4') rm "$logF" "$logF1";;
+'1') ToLogs;;
+'2') rm "$logF" "$logF1";;
+'3') xdg-open "$PbAddrUrl" >>/dev/null 2>&1 & disown;;
 '\') jumpto mma;;
-  *) jumpto mmb;;
+  *) jumpto mmbalt;;
 esac
-jumpto mmb
+jumpto mmbalt
 
 #################### SubMenu: MMA/
 mma0:
