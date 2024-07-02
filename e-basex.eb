@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240701_1915_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240701_2251_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -306,6 +306,7 @@ balvol="$TOTAL_RECEIVED_BTC"
 }
 #--------------------
 
+
 #################### Set Variables
 
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
@@ -343,6 +344,8 @@ echo -e "=== Main Menu =====================
  e | Stock Calc
  r | CLipboard  QR To Text  ** have image on clipboard already **
  t | Clipboard OCR To Text  ** have image on clipboard already **
+ y | CHECK BAL OF ADDRESS IN BASH
+ u | CHECK BAL OF ADDRESS IN BROWSER
  p | Dependency Installer
  \ | EXIT"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
@@ -362,6 +365,8 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 'e')  stock_calc; crap;;
 'r')  qrclip2txt; crap;;
 't')  ocrclip2txt; crap;;
+'y') clear; echo 'Enter Address (to check bal in bash)   '; read PbAddr; echo '--------------------'; balnvol "$PbAddr"; echo -e "Bal:\t$balnow\nVol:\t$balvol"; crap;;
+'u') clear; echo 'Enter Address (to check bal in browser)'; read PbAddr; echo '--------------------'; xdg-open "https://mempool.space/address/$PbAddr" >>/dev/null 2>&1 & disown;;
 'p')  GetDeps; crap;;
 '\')  rm "$PhFN"; rm "$PhF"; exit 0;;
   *)  jumpto mma;;
