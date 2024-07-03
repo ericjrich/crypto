@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240703_1105_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240703_1145_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -79,7 +79,7 @@ IFS='|' read -r PvKHex wif PbKHex PbKh160 PbAddr <<< "$pycode_OUT"
 
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
 crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
-GetDeps() { for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "You Have $i"; fi; done; for i in "${Dep_Pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
+GetDeps() { clear; echo 'Ctrl-C now if you dont want to install Dependencies'; crap; for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "You Have $i"; fi; done; for i in "${Dep_Pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
 toclip() { echo -n "$1" | xclip -selection clipboard; }
 makeclipQR() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; echo "$In1"; qrencode -t ANSIUTF8 "$In1"; }
 readclipQR() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "Decoded text from QR code:"; echo "$Out"; rm /tmp/clipboard.png; }
@@ -310,7 +310,10 @@ balvol="$TOTAL_RECEIVED_BTC"
 #################### Set Variables
 
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
-Dep_Apt=(python3 minimodem base58 basez dc gnupg hashalot oathtool openssl qrencode ruby-ascii85 tesseract-ocr zbar-tools espeak festival flite imagemagick feh figlet python3-pip whiptail xclip yad zenity)
+Dep_Apt=()
+Dep_Apt+=(base58 basez dc espeak feh festival figlet flite gifsicle gnupg hashalot imagemagick img2pdf jp2a jpegoptim jq minimodem oathtool openssl pandoc pngcrush python3 python3-pip qrencode ruby-ascii85 sox speech-dispatcher tesseract-ocr webcamoid webp whiptail wkhtmltopdf xautomation xbindkeys xclip xdotool yad zbar-tools zenity zint-qt)
+Dep_Apt+=(python3-base58 python3-ecdsa python3-mnemonic python3-pycryptodome python3-pyperclip python3-qrcode)
+
 PhFN="/tmp/numbers.txt"; PhF="/tmp/seed_phrase.txt"
 # basex.txt
 if [ -d "$HOME/Desktop" ]; then logF="$HOME/Desktop/basexQR.txt"; else logF="/tmp/basexQR.txt"; fi
@@ -363,7 +366,7 @@ jumpto loadvars
 mma:
 userOGin=''; userOGout=''; userOGout1=''
 clear
-echo -e "\t${TInvert}   *** EJRCNC CRYTO/BTC TOOLS (20240703_1105_est_EJR) ***${TOff}
+echo -e "\t${TInvert}   *** EJRCNC CRYTO/BTC TOOLS (20240703_1145_est_EJR) ***${TOff}
 ${TOff}
 ${TBCya}================  M a i n  M e n u  ==========================================${TOff}
  1 ${TPipe}${TFavs} Make BTC Wallet    ( Generated: Random Entropy      ) ${TItalic}[Prompt & SubMenu]${TOff}
