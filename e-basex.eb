@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240702_2103_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240702_2235_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -106,7 +106,7 @@ echo -e "**********$(date -u '+%Y-%m-%d %H:%M:%S') UTC **************** $(date '
 *Entropy (bin)*   $Tl2
 *Checksum*        hex=$Tl3   bin= $Tl4
 *Entropy & Chksm* $Tl5
-*SeedPhrase*      $PhStr
+*TESTING.PHRASE*  $PhStr
 *Balance*         $balnow\tBTC
 *Volume*          $balvol\tBTC
 *************************************************************************************************************************************************************************
@@ -126,18 +126,18 @@ echo -e "***********************************************************************
 *UserOGin*        $userOGin
 *UserOGout*       $userOGout
 *UserOGout1*      $userOGout1
-*Prv Key*         $PvKHex
-*WIF(p2pkh)*      $wif
+${TInvert}${TBold}${TFYel}*Prv Key*         ${TFBlu}$PvKHex${TOff}
+${TInvert}${TBold}${TFYel}*WIF(p2pkh)*      ${TFBlu}$wif${TOff}
 *Pub Key*         $PbKHex
 *Pub Key Hash160* $PbKh160
-*Pub Addrs*       $PbAddr
+${TInvert}${TBold}${TFYel}*Pub Addrs*       ${TFBlu}$PbAddr${TOff}
 *URL [Copied]*    $PbAddrUrl
 *Entropy (bin)*   $Tt2
 *Checksum*        hex= $Tt3    bin=$Tt4
 *Entropy & Chksm* $Tt5
-*SeedPhrase*      $PhStr
-*Balance*         $balnow\tBTC
-*Volume*          $balvol\tBTC
+${TDim}*TESTING.PHRASE*  $PhStr${TOff}
+${TInvert}${TBold}${TFYel}*Balance*         ${TFBlu}$balnow\tBTC${TOff}
+${TInvert}${TBold}${TFYel}*Volume*          ${TFBlu}$balvol\tBTC${TOff}
 *************************************************************************************************************************************************************************
 "; }
 #--------------------
@@ -327,24 +327,24 @@ txt2t9_IN=""; txt2t9_OUT=""; b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622d
   TOff='\e[0m'             # Reset all attributes
 
   # Text colors
-  TfBlk='\e[30m'        # Black text
-  TfRed='\e[31m'        # Red text
-  TfGre='\e[32m'        # Green text
-  TfYel='\e[33m'        # Yellow text
-  TfBlu='\e[34m'        # Blue text
-  TfMag='\e[35m'        # Magenta text
-  TfCya='\e[36m'        # Cyan text
-  TfWhi='\e[37m'        # White text
+  TFBlk='\e[30m'        # Black text
+  TFRed='\e[31m'        # Red text
+  TFGre='\e[32m'        # Green text
+  TFYel='\e[33m'        # Yellow text
+  TFBlu='\e[34m'        # Blue text
+  TFMag='\e[35m'        # Magenta text
+  TFCya='\e[36m'        # Cyan text
+  TFWhi='\e[37m'        # White text
 
   # Background colors
-  TbBlk='\e[40m'          # Black background
-  TbRed='\e[41m'          # Red background
-  TbGre='\e[42m'          # Green background
-  TbYel='\e[43m'          # Yellow background
-  TbBlu='\e[44m'          # Blue background
-  TbMag='\e[45m'          # Magenta background
-  TbCya='\e[46m'          # Cyan background
-  TbWhi='\e[47m'          # White background
+  TBBlk='\e[40m'          # Black background
+  TBRed='\e[41m'          # Red background
+  TBGre='\e[42m'          # Green background
+  TBYel='\e[43m'          # Yellow background
+  TBBlu='\e[44m'          # Blue background
+  TBMag='\e[45m'          # Magenta background
+  TBCya='\e[46m'          # Cyan background
+  TBWhi='\e[47m'          # White background
 
   # Text effects
   TBold='\e[1m'            # Bold text
@@ -359,18 +359,18 @@ jumpto loadvars
 mma:
 userOGin=''; userOGout=''; userOGout1=''
 clear
-echo -e "\t${TInvert}*** EJRCNC CRYTO/BTC TOOLS (20240702_2103_est_EJR) ***${TOff}
+echo -e "\t${TInvert}*** EJRCNC CRYTO/BTC TOOLS (20240702_2235_est_EJR) ***${TOff}
 ${TOff}
 ================  M a i n  M e n u  ========================${TOff}
- 1 | Make BTC Wallet ( Generated: Random Entropy      ) ${TBold}[Prompt & SubMenu]${TOff}
- 2 | Make BTC Wallet ( Enter Prv Key: Hex    L= 64    ) ${TBold}[Prompt & SubMenu]${TOff}
- 3 | Make BTC Wallet ( Enter Prv Key: Bin    L= 256   ) ${TBold}[Prompt & SubMenu]${TOff}
- 4 | Make BTC Wallet ( Enter Prv Key: Dec    L= Any   ) ${TBold}[Prompt & SubMenu]${TOff}
- 5 | Make BTC Wallet ( Enter Prv Key: WIF    L= 51-52 ) ${TBold}[Prompt & SubMenu]${TOff}
- 6 | Make BTC Wallet ( Enter Prv Key: String L= Any   ) ${TBold}[Prompt & SubMenu]${TOff}
- 7 | Make BTC Wallet ( Enter Mnemonic: 24 words       ) ${TBold}[Prompt & SubMenu]${TOff}
- 8 | n/a
- 9 | TESTING: Mnemonic --> Binary Rows${TOff}
+ 1 | Make BTC Wallet    ( Generated: Random Entropy      ) ${TBold}[Prompt & SubMenu]${TOff}
+ 2 | Make BTC Wallet    ( Enter Prv Key: Hex    L= 64    ) ${TBold}[Prompt & SubMenu]${TOff}
+ 3 | Make BTC Wallet    ( Enter Prv Key: Bin    L= 256   ) ${TBold}[Prompt & SubMenu]${TOff}
+ 4 | Make BTC Wallet    ( Enter Prv Key: Dec    L= Any   ) ${TBold}[Prompt & SubMenu]${TOff}
+ 5 | Make BTC Wallet    ( Enter Prv Key: WIF    L= 51-52 ) ${TBold}[Prompt & SubMenu]${TOff}
+ 6 | Make BTC Wallet    ( Enter Prv Key: String L= Any   ) ${TBold}[Prompt & SubMenu]${TOff}
+${TDim} 7 | TESTING: BtcWallet ( Enter Mnemonic: 24 word        ) [Prompt & SubMenu]${TOff}
+${TDim} 8 | TESTING: Mnemonic --> Binary Rows${TOff}
+${TDim} 9 | n/a${TOff}
  0 | Base Converter Calculators ${TBold}[SubMenu]${TOff}
  - | En/Decrypt Messages        ${TBold}[SubMenu]${TOff}
  q | Speak Clipboard${TOff}
@@ -378,8 +378,8 @@ ${TOff}
  e | Stock Calc${TOff}
  r | CLipboard:  QR To Text  ** have image on clipboard already **${TOff}
  t | Clipboard: OCR To Text  ** have image on clipboard already **${TOff}
- y | ${ClrFgCya}CHECK BAL OF ADDRESS IN: BASH${TOff}
- u | ${ClrFgCya}CHECK BAL OF ADDRESS IN: BROWSER${TOff}
+ y | CHECK BAL OF ADDRESS IN: BASH${TOff}
+ u | CHECK BAL OF ADDRESS IN: BROWSER${TOff}
  p | Dependency Installer${TOff}
  \ | EXIT${TOff}"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
@@ -444,10 +444,6 @@ jumpto mmb
 
 #################### SubMenu: MMA/
 mma8:
-jumpto mma
-
-#################### SubMenu: MMA/
-mma9:
 #===testing====
 
   # Make A Name For The Master Word List That Is Easier To Recognize
@@ -486,6 +482,10 @@ read -p 'Hit Enter' junk
 jumpto mma
 
 #################### SubMenu: MMA/
+mma9:
+jumpto mma
+
+#################### SubMenu: MMA/
 mmb:
 balnvol "$PbAddr"
 mmbalt:
@@ -496,7 +496,7 @@ echo -e "
  1 | Just Save To $logF & $logF1
  2 | Delete $logF & $logF1
  3 | Open URL
- \ | Back To Main Menu"
+ \ | Back To Main Menu   ${TBlink}❓️❓️❓️❓️❓️❓️${TOff}"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') ToLogs;;
 '2') rm "$logF" "$logF1";;
