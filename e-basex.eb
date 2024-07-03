@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240702_2235_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240703_1105_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -354,34 +354,38 @@ txt2t9_IN=""; txt2t9_OUT=""; b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622d
   TBlink='\e[5m'           # Blinking text (not recommended)
   TInvert='\e[7m'          # Invert foreground and background colors
   TConceal='\e[8m'         # Conceal or hide text (not widely supported)
+
+  # Text Customs
+  TPipe="${TBCya}|${TOff}"
+  TFavs="${TFYel}${TBold}"
 #################### MAIN MENU "MMA"
 jumpto loadvars
 mma:
 userOGin=''; userOGout=''; userOGout1=''
 clear
-echo -e "\t${TInvert}*** EJRCNC CRYTO/BTC TOOLS (20240702_2235_est_EJR) ***${TOff}
+echo -e "\t${TInvert}   *** EJRCNC CRYTO/BTC TOOLS (20240703_1105_est_EJR) ***${TOff}
 ${TOff}
-================  M a i n  M e n u  ========================${TOff}
- 1 | Make BTC Wallet    ( Generated: Random Entropy      ) ${TBold}[Prompt & SubMenu]${TOff}
- 2 | Make BTC Wallet    ( Enter Prv Key: Hex    L= 64    ) ${TBold}[Prompt & SubMenu]${TOff}
- 3 | Make BTC Wallet    ( Enter Prv Key: Bin    L= 256   ) ${TBold}[Prompt & SubMenu]${TOff}
- 4 | Make BTC Wallet    ( Enter Prv Key: Dec    L= Any   ) ${TBold}[Prompt & SubMenu]${TOff}
- 5 | Make BTC Wallet    ( Enter Prv Key: WIF    L= 51-52 ) ${TBold}[Prompt & SubMenu]${TOff}
- 6 | Make BTC Wallet    ( Enter Prv Key: String L= Any   ) ${TBold}[Prompt & SubMenu]${TOff}
-${TDim} 7 | TESTING: BtcWallet ( Enter Mnemonic: 24 word        ) [Prompt & SubMenu]${TOff}
-${TDim} 8 | TESTING: Mnemonic --> Binary Rows${TOff}
-${TDim} 9 | n/a${TOff}
- 0 | Base Converter Calculators ${TBold}[SubMenu]${TOff}
- - | En/Decrypt Messages        ${TBold}[SubMenu]${TOff}
- q | Speak Clipboard${TOff}
- w | Hex 2 Nato${TOff}
- e | Stock Calc${TOff}
- r | CLipboard:  QR To Text  ** have image on clipboard already **${TOff}
- t | Clipboard: OCR To Text  ** have image on clipboard already **${TOff}
- y | CHECK BAL OF ADDRESS IN: BASH${TOff}
- u | CHECK BAL OF ADDRESS IN: BROWSER${TOff}
- p | Dependency Installer${TOff}
- \ | EXIT${TOff}"
+${TBCya}================  M a i n  M e n u  ==========================================${TOff}
+ 1 ${TPipe}${TFavs} Make BTC Wallet    ( Generated: Random Entropy      ) ${TItalic}[Prompt & SubMenu]${TOff}
+ 2 ${TPipe}${TFavs} Make BTC Wallet    ( Enter Prv Key: Hex    L= 64    ) ${TItalic}[Prompt & SubMenu]${TOff}
+ 3 ${TPipe}${TFavs} Make BTC Wallet    ( Enter Prv Key: Bin    L= 256   ) ${TItalic}[Prompt & SubMenu]${TOff}
+ 4 ${TPipe}${TFavs} Make BTC Wallet    ( Enter Prv Key: Dec    L= Any   ) ${TItalic}[Prompt & SubMenu]${TOff}
+ 5 ${TPipe}${TFavs} Make BTC Wallet    ( Enter Prv Key: WIF    L= 51-52 ) ${TItalic}[Prompt & SubMenu]${TOff}
+ 6 ${TPipe}${TFavs} Make BTC Wallet    ( Enter Prv Key: String L= Any   ) ${TItalic}[Prompt & SubMenu]${TOff}
+ 7 ${TPipe}${TDim} TESTING: BtcWallet ( Enter Mnemonic: 24 word        ) [Prompt & SubMenu]${TOff}
+ 8 ${TPipe}${TDim} TESTING: Mnemonic --> Binary Rows${TOff}
+ 9 ${TPipe}${TDim} n/a${TOff}
+ 0 ${TPipe}${TFavs} Base Converter Calculators ${TItalic}[SubMenu]${TOff}
+ - ${TPipe}${TFavs} En/Decrypt Messages        ${TItalic}[SubMenu]${TOff}
+ q ${TPipe} Speak Clipboard${TOff}
+ w ${TPipe} Hex 2 Nato${TOff}
+ e ${TPipe} Stock Calc${TOff}
+ r ${TPipe} CLipboard:  QR To Text  ** have image on clipboard already **${TOff}
+ t ${TPipe} Clipboard: OCR To Text  ** have image on clipboard already **${TOff}
+ y ${TPipe}${TFavs} CHECK BAL OF ADDRESS IN: BASH${TOff}
+ u ${TPipe}${TFavs} CHECK BAL OF ADDRESS IN: BROWSER${TOff}
+ p ${TPipe} Dependency Installer${TOff}
+ \ ${TPipe} EXIT${TOff}"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1')  pf1 '2'; jumpto mmb;;
 '2')  echo -e "*Largest (HEX)* (64 chars)= fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140\n\nEnter Prv Key (hex):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
