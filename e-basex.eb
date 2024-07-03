@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240701_2330_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240702_2103_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 
 #################### Do First: Checking For Some Dependencies
@@ -322,32 +322,66 @@ tv1="$HOME/a-me/z-share/code/bitwords.txt"; tv2="/etc/skel/a-me/z-share/code/bit
 # prep empty vars
 txt2t9_IN=""; txt2t9_OUT=""; b582txt_IN=""; b582txt_OUT=""; b622dec_IN=""; b622dec_OUT=""; b622hex_IN=""; b622hex_OUT=""; b62hex_IN=""; b62hex_OUT=""; b642txt_IN=""; b642txt_OUT=""; bin2dec_IN=""; bin2dec_OUT=""; bin2hex_IN=""; bin2hex_OUT=""; bin2sha256_IN=""; bin2sha256_OUT=""; dec2b62_IN=""; dec2b62_OUT=""; dec2bin_IN=""; dec2bin_OUT=""; dec2hex_IN=""; dec2hex_OUT=""; dice_IN=""; dice_OUT=""; hex2b62_IN=""; hex2b62_OUT=""; hex2b6_IN=""; hex2b6_OUT=""; hex2bin_IN=""; hex2bin_OUT=""; hex2dec_IN=""; hex2dec_OUT=""; hex2txt_IN=""; hex2txt_OUT=""; txt2b58_IN=""; txt2b58_OUT=""; txt2b64_IN=""; txt2b64_OUT=""; txt2hex_IN=""; txt2hex_OUT=""; wif2prv_IN=""; wif2prv_OUT=""; prv2wif_IN=""; prv2wif_OUT=""; EncMsgClip=""; EncMsgPass=""; ssl2txt_IN=""; ssl2txt_OUT=""; txt2ssl_IN=""; txt2ssl_OUT=""
 
+
+#==== ANSI color codes ============================
+  TOff='\e[0m'             # Reset all attributes
+
+  # Text colors
+  TfBlk='\e[30m'        # Black text
+  TfRed='\e[31m'        # Red text
+  TfGre='\e[32m'        # Green text
+  TfYel='\e[33m'        # Yellow text
+  TfBlu='\e[34m'        # Blue text
+  TfMag='\e[35m'        # Magenta text
+  TfCya='\e[36m'        # Cyan text
+  TfWhi='\e[37m'        # White text
+
+  # Background colors
+  TbBlk='\e[40m'          # Black background
+  TbRed='\e[41m'          # Red background
+  TbGre='\e[42m'          # Green background
+  TbYel='\e[43m'          # Yellow background
+  TbBlu='\e[44m'          # Blue background
+  TbMag='\e[45m'          # Magenta background
+  TbCya='\e[46m'          # Cyan background
+  TbWhi='\e[47m'          # White background
+
+  # Text effects
+  TBold='\e[1m'            # Bold text
+  TDim='\e[2m'             # Dim or faint text
+  TItalic='\e[3m'          # Italicize text (not widely supported)
+  TUnderline='\e[4m'       # Underline text
+  TBlink='\e[5m'           # Blinking text (not recommended)
+  TInvert='\e[7m'          # Invert foreground and background colors
+  TConceal='\e[8m'         # Conceal or hide text (not widely supported)
 #################### MAIN MENU "MMA"
 jumpto loadvars
 mma:
 userOGin=''; userOGout=''; userOGout1=''
 clear
-echo -e "=== Main Menu =====================
- 1 | Generate New Prv Key                                   (Bitcoin)
- 2 | Enter Prv Key          **hex**                         (Bitcoin)
- 3 | Enter Prv Key          **bin**                         (Bitcoin)
- 4 | Enter Prv Key          **dec**                         (Bitcoin)
- 5 | Enter WIF              **wif 51 to 52 char b58**       (Bitcoin)
- 6 | Enter String           **sha256sum**                   (Bitcoin)
- 7 | Mnemonic Generator via Prv key ..REQUIRES A Prv KEY..  (Bitcoin)
- 8 | Mnemonic 2 Prv Key             ..REQUIRES MNEMONIC..   (Bitcoin)
- 9 | Mnemonic 2 Prv (testings)      ..REQUIRES MNEMONIC..   (Bitcoin)
- 0 | Base Converter Calculators
- - | En/Decrypt Messages
- q | Speak Clipboard
- w | Hex 2 Nato
- e | Stock Calc
- r | CLipboard  QR To Text  ** have image on clipboard already **
- t | Clipboard OCR To Text  ** have image on clipboard already **
- y | CHECK BAL OF ADDRESS IN BASH
- u | CHECK BAL OF ADDRESS IN BROWSER
- p | Dependency Installer
- \ | EXIT"
+echo -e "\t${TInvert}*** EJRCNC CRYTO/BTC TOOLS (20240702_2103_est_EJR) ***${TOff}
+${TOff}
+================  M a i n  M e n u  ========================${TOff}
+ 1 | Make BTC Wallet ( Generated: Random Entropy      ) ${TBold}[Prompt & SubMenu]${TOff}
+ 2 | Make BTC Wallet ( Enter Prv Key: Hex    L= 64    ) ${TBold}[Prompt & SubMenu]${TOff}
+ 3 | Make BTC Wallet ( Enter Prv Key: Bin    L= 256   ) ${TBold}[Prompt & SubMenu]${TOff}
+ 4 | Make BTC Wallet ( Enter Prv Key: Dec    L= Any   ) ${TBold}[Prompt & SubMenu]${TOff}
+ 5 | Make BTC Wallet ( Enter Prv Key: WIF    L= 51-52 ) ${TBold}[Prompt & SubMenu]${TOff}
+ 6 | Make BTC Wallet ( Enter Prv Key: String L= Any   ) ${TBold}[Prompt & SubMenu]${TOff}
+ 7 | Make BTC Wallet ( Enter Mnemonic: 24 words       ) ${TBold}[Prompt & SubMenu]${TOff}
+ 8 | n/a
+ 9 | TESTING: Mnemonic --> Binary Rows${TOff}
+ 0 | Base Converter Calculators ${TBold}[SubMenu]${TOff}
+ - | En/Decrypt Messages        ${TBold}[SubMenu]${TOff}
+ q | Speak Clipboard${TOff}
+ w | Hex 2 Nato${TOff}
+ e | Stock Calc${TOff}
+ r | CLipboard:  QR To Text  ** have image on clipboard already **${TOff}
+ t | Clipboard: OCR To Text  ** have image on clipboard already **${TOff}
+ y | ${ClrFgCya}CHECK BAL OF ADDRESS IN: BASH${TOff}
+ u | ${ClrFgCya}CHECK BAL OF ADDRESS IN: BROWSER${TOff}
+ p | Dependency Installer${TOff}
+ \ | EXIT${TOff}"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1')  pf1 '2'; jumpto mmb;;
 '2')  echo -e "*Largest (HEX)* (64 chars)= fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140\n\nEnter Prv Key (hex):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
@@ -376,84 +410,40 @@ jumpto mma
 #################### SubMenu: MMA/
 mma7:
   # Make A Name For The Master Word List That Is Easier To Recognize
-  WordListFile="$bitwords"
-  FileToStoreNumbers="$PhFN"
-  FileToStoreSeedPhrase="$PhF"
-
-  # Get Hex Private Key From User Input
-  clear; echo -e "==== PrvKey 2 Mnemonic ====\n  FYI: (Requires File bitwords.txt)\nEnter Hex Key:"; read PrvKeyHexIn #$Pv2Mn1
-  # Convert It To Binary
-  PrvKeyHexInToBin=$(hex2bin $PrvKeyHexIn)
-  # Get The CheckSum_Part (checksum is a hex value)
-  if [ ${#PrvKeyHexIn} -eq 64 ]; then PrvKeyHexInToBinChecksumPart=$(Sha256bits $PrvKeyHexInToBin | awk '{print $1}' | cut -c1-2)
-    elif [ ${#PrvKeyHexIn} -eq 32 ]; then PrvKeyHexInToBinChecksumPart=$(Sha256bits $PrvKeyHexInToBin | awk '{print substr($1,1,1)}')
-    else clear; echo 'Issue In Hex Length'; sleep 2; jumpto mma
-  fi
-  #Convert The Checksum_Part To Binary
-  PrvKeyHexInToBinChecksumPartAsBin=$(hex2bin $PrvKeyHexInToBinChecksumPart)
-  #Append The Checksum Part(bin) To UserInput(bin)
-  PrvKeyHexInToBinPlusChecksumPart=$PrvKeyHexInToBin$PrvKeyHexInToBinChecksumPartAsBin
-  #For every 11 chars of binary convert to decimal and store as a raw line number
-  for (( i=0; i<${#PrvKeyHexInToBinPlusChecksumPart}; i+=11 )); do
-    PrvKeyHexInToBinPlusChecksumPart11Chars=${PrvKeyHexInToBinPlusChecksumPart:$i:11}
-    echo $((2#${PrvKeyHexInToBinPlusChecksumPart11Chars}))
-  done > "$FileToStoreNumbers"
-  #For Each RawLineNumber Add 1 and find corresponding word in the word List and store these words
-  while read LineNumber; do
-    LineNumber=$((LineNumber + 1))
-    sed -n "${LineNumber}p" "$bitwords"
-  done < "$FileToStoreNumbers" > "$FileToStoreSeedPhrase"
-  #Transfer our words to a variable
-  PrvKeyHexInToBinPlusChecksumPartToPhrase=$(cat "$FileToStoreSeedPhrase" | tr '\n' ' ' | sed 's/ *$//')
-  #Put our words onto the clipboard
-  toclip "$PrvKeyHexInToBinPlusChecksumPartToPhrase"
-  #Show User Some Output
-  clear; echo -e "--Prv Key (hex)-------------\n$PrvKeyHexIn
---Entropy (bin)-------------\n$PrvKeyHexInToBin
---Checksum(hex)-------------\n$PrvKeyHexInToBinChecksumPart
---Checksum(bin)-------------\n$PrvKeyHexInToBinChecksumPartAsBin
---Entropy + Checksum (bin)--\n$PrvKeyHexInToBinPlusChecksumPart
---Phrase (On ClipBoard)-----\n$PrvKeyHexInToBinPlusChecksumPartToPhrase
-** HIT ENTER **"; read junk
-jumpto mma
+    WordListFile="$bitwords"; FileToStoreNumbers="$PhFN"; FileToStoreSeedPhrase="$PhF"
+  # Get Phrase From User
+    clear; echo -e "==== Mnemonic 2 PrvKey ====\n  FYI: (Requires File bitwords.txt\nEnter Phrase:"; read PhraseWordStringSpaced
+  # Loop Through Each Word
+    for ThisWord in $PhraseWordStringSpaced; do
+      # Get The Raw numberic value for the line number of the word
+      ThisLineDecRaw=$(grep -n -w "$ThisWord" "$WordListFile" | cut -d: -f1)
+      # Subtract 1 from the raw number to get a usable number (this is because we start with line 1 and zero is a possibility so we subtract 1) [could probably be explained better]
+      ThisLineDecCalc=$((ThisLineDecRaw - 1))
+      # convert last number to binary
+      ThisLineDecCalcToBin=$(printf "%011d" $(echo "obase=2;$ThisLineDecCalc" | bc))
+      # add last binary to a string
+      PhraseBinaryString+="$ThisLineDecCalcToBin"
+    done
+  # Chop Off The Checksum From The Binary String
+    if [ ${#PhraseBinaryString} -eq 264 ]; then PhraseBinaryStringNoChecksum="${PhraseBinaryString:0:-8}"
+      elif [ ${#PhraseBinaryString} -eq 132 ]; then PhraseBinaryStringNoChecksum="${PhraseBinaryString:0:-4}"
+      else clear; echo 'Length issue with words'; sleep 2; jumpto mma
+    fi
+  # Prep For MMB
+    prvkeyin=$(bin2hex "$PhraseBinaryStringNoChecksum")
+    userOGin="$prvkeyin"
+    prvkeyin=${prvkeyin,,}
+    prvkeyinlength=${#prvkeyin}
+    if [ $prvkeyinlength -lt 64 ]; then
+      prvkeyinpadding=$((64 - prvkeyinlength))
+      prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding))
+      prvkeyin="${prvkeyinzeros}${prvkeyin}"
+    fi
+    pf1 '1' "$prvkeyin"
+jumpto mmb
 
 #################### SubMenu: MMA/
 mma8:
-  # Make A Name For The Master Word List That Is Easier To Recognize
-  WordListFile="$bitwords"
-  FileToStoreNumbers="$PhFN"
-  FileToStoreSeedPhrase="$PhF"
-  # Get Phrase From User
-  clear; echo -e "==== Mnemonic 2 PrvKey ====\n  FYI: (Requires File bitwords.txt\nEnter Phrase:"; read PhraseWordStringSpaced
-  # Loop Through Each Word
-  for ThisWord in $PhraseWordStringSpaced; do
-    # Get The Raw numberic value for the line number of the word
-    ThisLineDecRaw=$(grep -n -w "$ThisWord" "$WordListFile" | cut -d: -f1)
-    # Subtract 1 from the raw number to get a usable number (this is because we start with line 1 and zero is a possibility so we subtract 1) [could probably be explained better]
-    ThisLineDecCalc=$((ThisLineDecRaw - 1))
-    # convert last number to binary
-    ThisLineDecCalcToBin=$(printf "%011d" $(echo "obase=2;$ThisLineDecCalc" | bc))
-    # add last binary to a string
-    PhraseBinaryString+="$ThisLineDecCalcToBin"
-  done
-  # Chop Off The Checksum From The Binary String
-  if [ ${#PhraseBinaryString} -eq 264 ]; then PhraseBinaryStringNoChecksum="${PhraseBinaryString:0:-8}"
-    elif [ ${#PhraseBinaryString} -eq 132 ]; then PhraseBinaryStringNoChecksum="${PhraseBinaryString:0:-4}"
-    else clear; echo 'Length issue with words'; sleep 2; jumpto mma
-  fi
-  # Convert The ChecksumFree Binary String To Hex
-  PhraseBinaryStringNoChecksumInHex=$(bin2hex "$PhraseBinaryStringNoChecksum")
-  # Put it on the clipboard
-  toclip "$PhraseBinaryStringNoChecksumInHex"
-  # Output For User
-  clear; echo -e "--Seed Phrase----------------
-$PhraseToPrvKeyHex
---Entropy + Checksum (bin)---
-$PhraseBinaryString
---Entropy no Checksum (bin)--
-$PhraseBinaryStringNoChecksum
---Prv Key in hex------------- (length= ${#PhraseBinaryStringNoChecksumInHex}) [on clipboard]
-$PhraseBinaryStringNoChecksumInHex"; read junk
 jumpto mma
 
 #################### SubMenu: MMA/
