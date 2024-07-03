@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240703_1812_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240703_1912_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -151,10 +151,8 @@ genbinlen() {
 }
 
 randtest() {
-    local r1='10000000001'
-    local r2=$(genbinlen 231)
-    local r3='10000000001001'
-    local r="$r1$r2$r3"
+    local r='101'
+    local r="$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001$(genbinlen 6)1010001001"
     echo "$r"
 }
 
@@ -324,7 +322,9 @@ balnow="$BALANCE_BTC"
 balvol="$TOTAL_RECEIVED_BTC"
 }
 #--------------------
+
 wipevars() { for i in "${vars2wipe[@]}"; do eval $i=""; done; }
+
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #misc
@@ -345,7 +345,7 @@ vars2wipe=(b582txt_IN b582txt_OUT b622dec_IN b622dec_OUT b622hex_IN b622hex_OUT 
 mma:
 wipevars
 clear
-echo -e "\t${TInvert}   *** EJRCNC CRYTO/BTC TOOLS (20240703_1812_est_EJR) ***${TOff}
+echo -e "\t${TInvert}   *** EJRCNC CRYTO/BTC TOOLS (20240703_1912_est_EJR) ***${TOff}
 ${TOff}
 ${TBCya}================  M a i n  M e n u  ==========================================${TOff}
  1 ${TPipe}${TFavs} Make BTC Wallet    ( Generated: Random Entropy      ) ${TItalic}[Prompt & SubMenu]${TOff}
