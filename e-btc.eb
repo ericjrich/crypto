@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240705_1610_est_EJR
+# 20240705_1910_est_EJR
 # btc
 
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
@@ -63,7 +63,7 @@ Hex64_TO_Addr() {
 import sys
 import hashlib
 import base58
-from Crypto.Hash import RIPEMD160
+from Cryptodome.Hash import RIPEMD160 #OLD= from Crypto.Hash import RIPEMD160
 from ecdsa import SigningKey, SECP256k1
 
 private_key_hex = sys.argv[1]
