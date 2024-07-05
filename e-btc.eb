@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# 20240705_1543_est_EJR
+# btc
+
+jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
+crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
+toclip() { echo -n "$1" | xclip -selection clipboard; }
+QrMaker() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(echo -e "$In1\n$(qrencode -t ASCIIi $In1)"); echo "$Out"; }
+QrReader() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "$Out"; rm /tmp/clipboard.png; }
+WIF_TO_Hex64() { local IN="$1"; local OUT; OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\'); OUT=${OUT,,}; OUT=${OUT:2}; OUT=${OUT:0:64}; echo -n "$OUT"; }
+#-----------------------------------------
+Hex64_TO_PubKeyHex66() { local VarBashToPy1="$1"; local pycode=$(cat <<'PYEOF'
+#!/usr/bin/env python3
+
+#-----Import: Modules------------
+import sys
+from ecdsa import SigningKey, SECP256k1
+
+#-----Import: Vars---------------
+private_key_hex = sys.argv[1]
+
+#-----SCRIPT-----------------------------------
+# Convert the hex private key to bytes
+private_key_bytes = bytes.fromhex(private_key_hex)
+
+# Create a signing key object
+signing_key = SigningKey.from_string(private_key_bytes, curve=SECP256k1)
+
+# Get the corresponding public key in compressed format
+verifying_key = signing_key.verifying_key
+public_key_hex = verifying_key.to_string("compressed").hex()
+
+
+#= VARS =========================================
+print(f"{public_key_hex}", flush=True)
+PYEOF
+)
+local VarPyToBashAll=$(python3 -c "$pycode" "$VarBashToPy1")
+#IFS='|' read -r PvKHex wif PbKHex PbKh160 PbAddr <<< "$VarPyToBashAll"
+local tmp
+read -r tmp <<< "$VarPyToBashAll"
+echo "$tmp"
+}
+#-----------------------------------------
+Hex64_TO_WIF() {
+  local private_key=$1             # Capture Input "The 64 char. hex. prv. key"
+  local version="80"               # Mainnet version prefix
+  local compression="01"           # Compression extension
+  local extended_key="${version}${private_key}${compression}"   # Add version prefix & the compression extension to the private key
+  local sha256_1=$(echo -n "${extended_key}" | xxd -r -p | sha256sum -b | awk '{print $1}')   # Perform SHA-256 hash of the extended key
+  local sha256_2=$(echo -n "${sha256_1}" | xxd -r -p | sha256sum -b | awk '{print $1}')       # Perform SHA-256 hash of the previous hash
+  local checksum=${sha256_2:0:8}   # Get the first 4 bytes of the second hash (checksum)
+  local extended_key_checksum="${extended_key}${checksum}"      # Concatenate the extended key and the checksum
+  local base58_result=$(echo -n "${extended_key_checksum}" | xxd -r -p | base58)    # Convert the result to base58
+  echo -n "${base58_result}"       # Output the WIF
+}
+#-----------------------------------------
+Hex64_TO_Addr() {
+  local VarBashToPy1="$1"
+  local pycode=$(cat <<'PYEOF'
+#!/usr/bin/env python3
+
+import sys
+import hashlib
+import base58
+from Crypto.Hash import RIPEMD160
+from ecdsa import SigningKey, SECP256k1
+
+private_key_hex = sys.argv[1]
+private_key_bytes = bytes.fromhex(private_key_hex)
+signing_key = SigningKey.from_string(private_key_bytes, curve=SECP256k1)
+verifying_key = signing_key.verifying_key
+public_key_hex = verifying_key.to_string("compressed").hex()
+
+sha256 = hashlib.sha256()
+sha256.update(bytes.fromhex(public_key_hex))
+ripemd160 = RIPEMD160.new()
+ripemd160.update(sha256.digest())
+hashed_public_key = ripemd160.digest()
+
+network_byte = b'\x00'
+networked_key = network_byte + hashed_public_key
+
+sha256 = hashlib.sha256()
+sha256.update(networked_key)
+checksum = sha256.digest()
+sha256 = hashlib.sha256()
+sha256.update(checksum)
+checksum = sha256.digest()[:4]
+
+binary_address = networked_key + checksum
+btc_address = base58.b58encode(binary_address).decode()
+
+print(btc_address, flush=True)
+PYEOF
+)
+  local VarPyToBashAll=$(python3 -c "$pycode" "$VarBashToPy1")
+  local tmp
+  read -r tmp <<< "$VarPyToBashAll"
+  echo "$tmp"
+}
+
+#-----------------------------------------
+Hex64Rand() {
+    local pycode=$(cat <<'PYEOF'
+#!/usr/bin/env python3
+#import sys
+#import hashlib
+import secrets
+# Generate a random 256-bit (32 bytes) private key
+private_key = secrets.token_hex(32)
+print(private_key)
+PYEOF
+)
+  local private_key=$(python3 -c "$pycode")
+  echo "$private_key"
+}
+
+
+#*************************************************************************************
+#*************************************************************************************
+mma:
+wipevars
+clear
+echo -e "================  M a i n  M e n u  ==========================================
+1 - Hex64_TO_WalletInfo
+2 - New_Hex64
+3 - Hex64_TO_WIF
+4 - WIF_TO_Hex64
+5 - Convert: QR  TO TXT (Have Image On Clipboard Already)
+6 - Convert: TXT TO QR  (Have Data  On Clipboard Already)
+\ - EXIT"
+read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
+'1') jumpto mma1;;
+'2') tmp=$(Hex64Rand); echo "$tmp"; toclip "$tmp"; crap;;
+'3') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_TO_WIF $tmp); echo "$tmp"; toclip "$tmp"; crap;;
+'4') echo 'Enter WIF:'; read tmp; tmp=$(WIF_TO_Hex64 $tmp); echo "$tmp"; toclip "$tmp"; crap;;
+'5') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
+'6') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
+'\')  exit 0;;
+  *)  jumpto mma;;
+esac
+jumpto mma
+
+#..............................................................
+mma1:
+clear; echo 'Input Private Key (HEX-64):'; read Hex64; clear
+PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); WIF=$(Hex64_TO_WIF "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64")
+tmp=$(echo -e "Private Key:\t$Hex64
+Public Key:\t$PubKeyHex66
+WIF:\t$WIF
+Addr:\t$Addr")
+echo "$tmp"
+toclip "$tmp"
+crap; jumpto mma
+#..............................................................
