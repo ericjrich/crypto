@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240703_1912_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240705_1610_est_EJR (ericjrich.com & ejrcnc.com)
 # basex
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -345,7 +345,7 @@ vars2wipe=(b582txt_IN b582txt_OUT b622dec_IN b622dec_OUT b622hex_IN b622hex_OUT 
 mma:
 wipevars
 clear
-echo -e "\t${TInvert}   *** EJRCNC CRYTO/BTC TOOLS (20240703_1912_est_EJR) ***${TOff}
+echo -e "\t${TInvert}   *** EJRCNC CRYTO/BTC TOOLS (20240705_1610_est_EJR) ***${TOff}
 ${TOff}
 ${TBCya}================  M a i n  M e n u  ==========================================${TOff}
  1 ${TPipe}${TFavs} Make BTC Wallet    ( Generated: Random Entropy      ) ${TItalic}[Prompt & SubMenu]${TOff}
@@ -367,6 +367,7 @@ ${TBCya}================  M a i n  M e n u  ====================================
  y ${TPipe}${TFavs} CHECK BAL OF ADDRESS IN: BASH${TOff}
  u ${TPipe}${TFavs} CHECK BAL OF ADDRESS IN: BROWSER${TOff}
  p ${TPipe} Dependency Installer${TOff}
+ m ${TPipe} Readme${TOff}
  \ ${TPipe} EXIT${TOff}"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1')  pf1 '2'; jumpto mmb;;
@@ -388,6 +389,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 'y') clear; echo 'Enter Address (to check bal in bash)   '; read PbAddr; echo '--------------------'; balnvol "$PbAddr"; echo -e "Bal:\t$balnow\nVol:\t$balvol"; crap;;
 'u') clear; echo 'Enter Address (to check bal in browser)'; read PbAddr; echo '--------------------'; xdg-open "https://mempool.space/address/$PbAddr" >>/dev/null 2>&1 & disown;;
 'p')  GetDeps; crap;;
+'m')  jumpto readme;;
 '\')  rm "$PhFN"; rm "$PhF"; exit 0;;
   *)  jumpto mma;;
 esac
@@ -869,4 +871,34 @@ AsciiEOF
 crap
 jumpto mma
 
+#..............................................................
+readme:
+echo '
+# Bitcoin Key Management Tool
+
+This Bash script provides a suite of tools for Bitcoin key management and conversion. It includes functionalities for generating new keys, converting keys between different formats, creating and reading QR codes, and copying data to and from the clipboard.
+
+## Features
+
+- Convert a 64-character hexadecimal private key to a Wallet Import Format (WIF) key.
+- Convert WIF back to a 64-character hexadecimal private key.
+- Generate a new random 64-character hexadecimal private key.
+- Convert a 64-character hexadecimal private key to a Bitcoin address.
+- Create QR codes from text and read QR codes to text, handling clipboard operations.
+
+### Installing Dependencies
+
+======= Recommended To Have As Dependencies ============
+##--- LINUX DEPS ---##
+sudo apt install -y base58 basez dc espeak feh festival figlet flite gifsicle gnupg hashalot imagemagick img2pdf jp2a jpegoptim jq minimodem oathtool openssl pandoc pngcrush python3 python3-pip qrencode ruby-ascii85 sox speech-dispatcher tesseract-ocr webcamoid webp whiptail wkhtmltopdf xautomation xbindkeys xclip xdotool yad zbar-tools zenity zint-qt
+
+##--- PYTHON DEPS (opion 1)---##
+pip3 install base58 ecdsa mnemonic pycryptodome pyperclip qrcode
+
+##--- PYTHON DEPS (opion 2)---##
+sudo apt install -y python3-base58 python3-ecdsa python3-mnemonic python3-pycryptodome python3-pyperclip python3-qrcode
+
+'
+crap; jumpto mma
+#..............................................................
 #################### END ####################

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240705_1543_est_EJR
+# 20240705_1610_est_EJR
 # btc
 
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
@@ -129,6 +129,7 @@ echo -e "================  M a i n  M e n u  ===================================
 4 - WIF_TO_Hex64
 5 - Convert: QR  TO TXT (Have Image On Clipboard Already)
 6 - Convert: TXT TO QR  (Have Data  On Clipboard Already)
+m - Readme
 \ - EXIT"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') jumpto mma1;;
@@ -137,6 +138,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '4') echo 'Enter WIF:'; read tmp; tmp=$(WIF_TO_Hex64 $tmp); echo "$tmp"; toclip "$tmp"; crap;;
 '5') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
 '6') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
+'m') jumpto readme;;
 '\')  exit 0;;
   *)  jumpto mma;;
 esac
@@ -152,5 +154,34 @@ WIF:\t$WIF
 Addr:\t$Addr")
 echo "$tmp"
 toclip "$tmp"
+crap; jumpto mma
+#..............................................................
+readme:
+echo '
+# Bitcoin Key Management Tool
+
+This Bash script provides a suite of tools for Bitcoin key management and conversion. It includes functionalities for generating new keys, converting keys between different formats, creating and reading QR codes, and copying data to and from the clipboard.
+
+## Features
+
+- Convert a 64-character hexadecimal private key to a Wallet Import Format (WIF) key.
+- Convert WIF back to a 64-character hexadecimal private key.
+- Generate a new random 64-character hexadecimal private key.
+- Convert a 64-character hexadecimal private key to a Bitcoin address.
+- Create QR codes from text and read QR codes to text, handling clipboard operations.
+
+### Installing Dependencies
+
+======= Recommended To Have As Dependencies ============
+##--- LINUX DEPS ---##
+sudo apt install -y base58 basez dc espeak feh festival figlet flite gifsicle gnupg hashalot imagemagick img2pdf jp2a jpegoptim jq minimodem oathtool openssl pandoc pngcrush python3 python3-pip qrencode ruby-ascii85 sox speech-dispatcher tesseract-ocr webcamoid webp whiptail wkhtmltopdf xautomation xbindkeys xclip xdotool yad zbar-tools zenity zint-qt
+
+##--- PYTHON DEPS (opion 1)---##
+pip3 install base58 ecdsa mnemonic pycryptodome pyperclip qrcode
+
+##--- PYTHON DEPS (opion 2)---##
+sudo apt install -y python3-base58 python3-ecdsa python3-mnemonic python3-pycryptodome python3-pyperclip python3-qrcode
+
+'
 crap; jumpto mma
 #..............................................................
