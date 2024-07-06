@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240705_1910_est_EJR
+# 20240705_2043_est_EJR
 # btc
 
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
@@ -99,7 +99,6 @@ PYEOF
   read -r tmp <<< "$VarPyToBashAll"
   echo "$tmp"
 }
-
 #-----------------------------------------
 Hex64Rand() {
     local pycode=$(cat <<'PYEOF'
@@ -115,7 +114,100 @@ PYEOF
   local private_key=$(python3 -c "$pycode")
   echo "$private_key"
 }
+#-----------------------------------------
+Hex64_TO_Addr2() { local VarBashToPy1="$1"; local pycode=$(cat <<'PYEOF'
+#!/usr/bin/env python3
 
+import sys
+import hashlib
+from ecdsa import SigningKey, SECP256k1
+from Crypto.Hash import RIPEMD160
+
+# Bech32 encoding functions
+CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+
+def bech32_polymod(values):
+    """Internal function that computes the Bech32 checksum."""
+    GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+    chk = 1
+    for v in values:
+        b = (chk >> 25)
+        chk = (chk & 0x1ffffff) << 5 ^ v
+        for i in range(5):
+            chk ^= GEN[i] if ((b >> i) & 1) else 0
+    return chk
+
+def bech32_hrp_expand(hrp):
+    """Expand the HRP into values for checksum computation."""
+    return [ord(x) >> 5 for x in hrp] + [0] + [ord(x) & 31 for x in hrp]
+
+def bech32_create_checksum(hrp, data):
+    """Compute the checksum values given HRP and data."""
+    values = bech32_hrp_expand(hrp) + data
+    polymod = bech32_polymod(values + [0, 0, 0, 0, 0, 0]) ^ 1
+    return [(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
+
+def bech32_encode(hrp, data):
+    """Compute a Bech32 string given HRP and data values."""
+    combined = data + bech32_create_checksum(hrp, data)
+    return hrp + '1' + ''.join([CHARSET[d] for d in combined])
+
+def convertbits(data, frombits, tobits, pad=True):
+    """General power-of-2 base conversion."""
+    acc = 0
+    bits = 0
+    ret = []
+    maxv = (1 << tobits) - 1
+    for value in data:
+        if (value < 0) or (value >> frombits):
+            return None
+        acc = (acc << frombits) | value
+        bits += frombits
+        while bits >= tobits:
+            bits -= tobits
+            ret.append((acc >> bits) & maxv)
+    if pad:
+        if bits:
+            ret.append((acc << (tobits - bits)) & maxv)
+    elif bits >= frombits or ((acc << (tobits - bits)) & maxv):
+        return None
+    return ret
+
+# Accept the private key as a hexadecimal string argument
+private_key_hex = sys.argv[1]
+private_key_bytes = bytes.fromhex(private_key_hex)
+signing_key = SigningKey.from_string(private_key_bytes, curve=SECP256k1)
+verifying_key = signing_key.verifying_key
+
+# Get the compressed public key in hexadecimal format
+public_key_hex = verifying_key.to_string("compressed").hex()
+
+# Perform SHA256 hashing on the public key
+sha256 = hashlib.sha256()
+sha256.update(bytes.fromhex(public_key_hex))
+sha256_hashed_public_key = sha256.digest()
+
+# Perform RIPEMD160 hashing on the SHA256 hash to get the hashed public key
+ripemd160 = RIPEMD160.new()
+ripemd160.update(sha256_hashed_public_key)
+hashed_public_key = ripemd160.digest()
+
+# Convert the hashed public key to the 5-bit representation
+witver = 0  # Witness version for P2WPKH
+witprog = convertbits(hashed_public_key, 8, 5)
+
+# Bech32 encode the hashed public key to get P2WPKH address
+addr = bech32_encode("bc", [witver] + witprog)
+
+# Print the resulting address
+print(addr, flush=True)
+PYEOF
+)
+  local VarPyToBashAll=$(python3 -c "$pycode" "$VarBashToPy1")
+  local tmp
+  read -r tmp <<< "$VarPyToBashAll"
+  echo "$tmp"
+}
 
 #*************************************************************************************
 #*************************************************************************************
@@ -147,11 +239,13 @@ jumpto mma
 #..............................................................
 mma1:
 clear; echo 'Input Private Key (HEX-64):'; read Hex64; clear
-PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); WIF=$(Hex64_TO_WIF "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64")
-tmp=$(echo -e "Private Key:\t$Hex64
-Public Key:\t$PubKeyHex66
-WIF:\t$WIF
-Addr:\t$Addr")
+PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); WIF=$(Hex64_TO_WIF "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64"); Addr2=$(Hex64_TO_Addr2 "$Hex64")
+tmp=$(echo -e "Private Key:  $Hex64
+Public Key:   $PubKeyHex66
+WIF:          $WIF
+Addr(P2PKH):  $Addr
+Addr(P2wPKH): $Addr2")
+
 echo "$tmp"
 toclip "$tmp"
 crap; jumpto mma
