@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240705_2043_est_EJR
+# 20240707_1345_est_EJR
 # btc
 
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
@@ -55,6 +55,7 @@ Hex64_TO_WIF() {
   echo -n "${base58_result}"       # Output the WIF
 }
 #-----------------------------------------
+#p2pkh
 Hex64_TO_Addr() {
   local VarBashToPy1="$1"
   local pycode=$(cat <<'PYEOF'
@@ -115,6 +116,7 @@ PYEOF
   echo "$private_key"
 }
 #-----------------------------------------
+#p2wpkh
 Hex64_TO_Addr2() { local VarBashToPy1="$1"; local pycode=$(cat <<'PYEOF'
 #!/usr/bin/env python3
 
@@ -209,6 +211,77 @@ PYEOF
   echo "$tmp"
 }
 
+#-----------------------------------------
+#p2wpkh-p2sh (chatgpt fix this to do p2wpkh-p2sh (it is currently setup to do p2wpkh)
+Hex64_TO_Addr3() { local VarBashToPy1="$1"; local pycode=$(cat <<'PYEOF'
+#!/usr/bin/env python3
+
+import sys
+import hashlib
+import base58
+from ecdsa import SigningKey, SECP256k1
+from Crypto.Hash import RIPEMD160
+
+# Accept the private key as a hexadecimal string argument
+private_key_hex = sys.argv[1]
+private_key_bytes = bytes.fromhex(private_key_hex)
+signing_key = SigningKey.from_string(private_key_bytes, curve=SECP256k1)
+verifying_key = signing_key.verifying_key
+
+# Get the compressed public key in hexadecimal format
+public_key_hex = verifying_key.to_string("compressed").hex()
+
+# Perform SHA256 hashing on the public key
+sha256 = hashlib.sha256()
+sha256.update(bytes.fromhex(public_key_hex))
+sha256_hashed_public_key = sha256.digest()
+
+# Perform RIPEMD160 hashing on the SHA256 hash to get the hashed public key
+ripemd160 = RIPEMD160.new()
+ripemd160.update(sha256_hashed_public_key)
+hashed_public_key = ripemd160.digest()
+
+# Create the P2WPKH scriptPubKey
+script_pubkey = b'\x00' + bytes([len(hashed_public_key)]) + hashed_public_key
+
+# Perform SHA256 hashing on the scriptPubKey
+sha256 = hashlib.sha256()
+sha256.update(script_pubkey)
+sha256_script_pubkey = sha256.digest()
+
+# Perform RIPEMD160 hashing on the SHA256 hash to get the hashed scriptPubKey
+ripemd160 = RIPEMD160.new()
+ripemd160.update(sha256_script_pubkey)
+hashed_script_pubkey = ripemd160.digest()
+
+# Add the P2SH version byte (0x05)
+network_byte = b'\x05'
+networked_key = network_byte + hashed_script_pubkey
+
+# Double SHA256 hashing for the checksum
+sha256 = hashlib.sha256()
+sha256.update(networked_key)
+checksum = sha256.digest()
+sha256 = hashlib.sha256()
+sha256.update(checksum)
+checksum = sha256.digest()[:4]
+
+# Append the checksum
+binary_address = networked_key + checksum
+
+# Encode in Base58
+btc_address = base58.b58encode(binary_address).decode()
+
+# Print the resulting address
+print(btc_address, flush=True)
+PYEOF
+)
+  local VarPyToBashAll=$(python3 -c "$pycode" "$VarBashToPy1")
+  local tmp
+  read -r tmp <<< "$VarPyToBashAll"
+  echo "$tmp"
+}
+
 #*************************************************************************************
 #*************************************************************************************
 mma:
@@ -239,12 +312,13 @@ jumpto mma
 #..............................................................
 mma1:
 clear; echo 'Input Private Key (HEX-64):'; read Hex64; clear
-PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); WIF=$(Hex64_TO_WIF "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64"); Addr2=$(Hex64_TO_Addr2 "$Hex64")
-tmp=$(echo -e "Private Key:  $Hex64
-Public Key:   $PubKeyHex66
-WIF:          $WIF
-Addr(P2PKH):  $Addr
-Addr(P2wPKH): $Addr2")
+PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); WIF=$(Hex64_TO_WIF "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64"); Addr2=$(Hex64_TO_Addr2 "$Hex64"); Addr3=$(Hex64_TO_Addr3 "$Hex64")
+tmp=$(echo -e "Private Key:      $Hex64
+Public Key:       $PubKeyHex66
+WIF:              $WIF
+Addr p2pkh:       $Addr
+Addr p2wpkh:      $Addr2
+Addr p2wpkh-p2sh: $Addr3")
 
 echo "$tmp"
 toclip "$tmp"
