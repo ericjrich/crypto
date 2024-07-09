@@ -1,30 +1,165 @@
 #!/usr/bin/env bash
-# 20240708_2211_est_EJR
+# 20240709_1931_est_EJR
 # btcV2
-
 #=== bash functions ======================================================================================
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
-#######
 crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
-#######
 toclip() { echo -n "$1" | xclip -selection clipboard; }
-#######
 QrMaker() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(echo -e "$In1\n$(qrencode -t ASCIIi $In1)"); echo "$Out"; }
-#######
 QrReader() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "$Out"; rm /tmp/clipboard.png; }
-#######
+change_version_bytes() { local ext_key="$1"; local new_version="$2"; local decoded_hex=$(echo "$ext_key" | base58 -d | xxd -p -c 256); local new_hex="${new_version}${decoded_hex:8}"; echo "$new_hex" | xxd -r -p | base58; }
 WIF_TO_Hex64() { local IN="$1"; local OUT; OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\'); OUT=${OUT,,}; OUT=${OUT:2}; OUT=${OUT:0:64}; echo -n "$OUT"; }
-#######
 Str_TO_Hex64() { echo -n "$1" | sha256sum | awk '{print $1}'; }
-#######
-Hex64_TO_WIF() {
-  local key=$1; local ext_key="80${key}01"
-  local checksum=$(echo -n "$(echo -n "$ext_key" | xxd -r -p | sha256sum -b | awk '{print $1}' | xxd -r -p | sha256sum -b | awk '{print $1}')" | head -c 8)
-  echo -n "$(echo -n "$ext_key$checksum" | xxd -r -p | base58)"
-} #######
+Hex64_TO_yprv() { local xprv=$(Hex64_TO_xprv "$1"); change_version_bytes "$xprv" "049d7878"; }
+Hex64_TO_zprv() { local xprv=$(Hex64_TO_xprv "$1"); change_version_bytes "$xprv" "04b2430c"; }
+Hex64_TO_ypub() { local xpub=$(Hex64_TO_xpub "$1"); change_version_bytes "$xpub" "049d7cb2"; }
+Hex64_TO_zpub() { local xpub=$(Hex64_TO_xpub "$1"); change_version_bytes "$xpub" "04b24746"; }
+Hex64_TO_WIF() { local key=$1; local ext_key="80${key}01"; local checksum=$(echo -n "$(echo -n "$ext_key" | xxd -r -p | sha256sum -b | awk '{print $1}' | xxd -r -p | sha256sum -b | awk '{print $1}')" | head -c 8); echo -n "$(echo -n "$ext_key$checksum" | xxd -r -p | base58)"; }
+bin2hex() { local bin="$1"; local hex=""; while (( (i + ${#bin}) % 4 != 0 )); do bin="0$bin"; done; for ((i = 0; i < ${#bin}; i += 4)); do chunk="${bin:i:4}"; case "$chunk" in 0000) hex+="0" ;; 0001) hex+="1" ;; 0010) hex+="2" ;; 0011) hex+="3" ;; 0100) hex+="4" ;; 0101) hex+="5" ;; 0110) hex+="6" ;; 0111) hex+="7" ;; 1000) hex+="8" ;; 1001) hex+="9" ;; 1010) hex+="a" ;; 1011) hex+="b" ;; 1100) hex+="c" ;; 1101) hex+="d" ;; 1110) hex+="e" ;; 1111) hex+="f" ;; *) echo "Invalid binary input: $chunk"; return 1 ;; esac; done; echo -n "$hex"; }
 #=== python funtions =====================================================================================
 Hex64Rand() { python3 -c "import secrets; print(secrets.token_hex(32))"; }
 #######
+
+mnemonic_to_Hex64() {
+  python3 -c "
+import sys
+import binascii
+from mnemonic import Mnemonic
+
+def mnemonic_to_hex64(mnemonic):
+    mnemo = Mnemonic('english')
+    seed = mnemo.to_seed(mnemonic, passphrase='')
+    hex_key = binascii.hexlify(seed[:32]).decode()  # Taking the first 32 bytes (64 hex characters)
+    return hex_key
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('Usage: mnemonic_to_Hex64 <mnemonic>')
+        sys.exit(1)
+
+    mnemonic = sys.argv[1]
+    hex64 = mnemonic_to_hex64(mnemonic)
+    print(hex64)" "$1"
+} #######
+
+
+mnemonic_to_pbkdf2() {
+  python3 -c "
+import sys
+import hashlib
+import binascii
+
+def mnemonic_to_seed(mnemonic, passphrase=''):
+    mnemonic = mnemonic.encode('utf-8')
+    salt = ('mnemonic' + passphrase).encode('utf-8')
+    seed = hashlib.pbkdf2_hmac('sha512', mnemonic, salt, 2048, dklen=64)
+    return binascii.hexlify(seed).decode()
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('Usage: mnemonic_to_pbkdf2 <mnemonic>')
+        sys.exit(1)
+
+    mnemonic = sys.argv[1]
+    passphrase = ''  # Empty passphrase
+    output = mnemonic_to_seed(mnemonic, passphrase)
+    print(output)" "$1"
+} #######
+
+Hex64_TO_pbkdf2() {
+  python3 -c "
+import sys
+import hashlib
+import binascii
+from mnemonic import Mnemonic
+
+def mnemonic_to_seed(mnemonic, passphrase=''):
+    mnemonic = mnemonic.encode('utf-8')
+    salt = ('mnemonic' + passphrase).encode('utf-8')
+    seed = hashlib.pbkdf2_hmac('sha512', mnemonic, salt, 2048, dklen=64)
+    return binascii.hexlify(seed).decode()
+
+def hex_to_mnemonic(hex_key):
+    mnemo = Mnemonic('english')
+    entropy = bytes.fromhex(hex_key)
+    mnemonic = mnemo.to_mnemonic(entropy)
+    return mnemonic
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('Usage: Hex64_TO_pbkdf2 <hex_key>')
+        sys.exit(1)
+
+    hex_key = sys.argv[1]
+    mnemonic = hex_to_mnemonic(hex_key)
+    passphrase = ''  # Empty passphrase
+    seed = mnemonic_to_seed(mnemonic, passphrase)
+    print(seed)" "$1"
+} #######
+Hex64_to_mnemonic() {
+  python3 -c "
+import sys
+from mnemonic import Mnemonic
+
+def hex_to_mnemonic(hex_key):
+    mnemo = Mnemonic('english')
+    entropy = bytes.fromhex(hex_key)
+    mnemonic = mnemo.to_mnemonic(entropy)
+    return mnemonic
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('Usage: Hex64_to_mnemonic <hex_key>')
+        sys.exit(1)
+
+    hex_key = sys.argv[1]
+    mnemonic = hex_to_mnemonic(hex_key)
+    print(mnemonic)" "$1"
+} #######
+Hex64_TO_xprv() {
+  python3 -c "
+import sys
+import binascii
+from bip32utils import BIP32Key
+
+def hex64_to_xprv(hex_key):
+    try:
+        priv_key_bin = binascii.unhexlify(hex_key)
+        bip32_key = BIP32Key.fromEntropy(priv_key_bin)
+        print(bip32_key.ExtendedKey(private=True))
+    except Exception as e:
+        print(f'Error: {e}')
+
+hex_key = sys.argv[1]
+hex64_to_xprv(hex_key)" "$1"
+} #######
+Hex64_TO_xpub() {
+  python3 -c "
+import sys
+import binascii
+from bip32utils import BIP32Key
+
+def hex64_to_xpub(hex_key):
+    try:
+        priv_key_bin = binascii.unhexlify(hex_key)
+        bip32_key = BIP32Key.fromEntropy(priv_key_bin)
+        xprv = bip32_key.ExtendedKey(private=True)
+        bip32_key = BIP32Key.fromExtendedKey(xprv)
+        print(bip32_key.ExtendedKey(private=False))
+    except Exception as e:
+        print(f'Error: {e}')
+
+hex_key = sys.argv[1]
+hex64_to_xpub(hex_key)" "$1"
+} #######
+Hex64_TO_PubKeyHex130() {
+  python3 -c "
+import sys
+from ecdsa import SigningKey, SECP256k1
+key = SigningKey.from_string(bytes.fromhex(sys.argv[1]), curve=SECP256k1)
+pub_key = key.verifying_key.to_string('uncompressed').hex()
+print('04' + pub_key)" "$1"
+} #######
 Hex64_TO_PubKeyHex66() {
   python3 -c "
 import sys
@@ -100,43 +235,78 @@ print(base58.b58encode_check(b'\x05' + rmd.digest()).decode())" "$1"
 #=== MMA ================================================================================================================================
 mma:
 clear; echo -e "================  M a i n  M e n u  ==========================================
-1 - Hex64_TO_WalletInfo
-2 - New_Hex64
+1 - New_Hex64
+2 - Hex64_TO_WalletInfo
 3 - Hex64_TO_WIF
-4 - WIF_TO_Hex64
-5 - String_TO_Hex64
-6 - Convert: QR  TO TXT (Have Image On Clipboard Already)
-7 - Convert: TXT TO QR  (Have Data  On Clipboard Already)
+4 - Hex64_TO_mnemonic
+5 - Hex64_TO_pbkdf2
+6 - WIF_TO_Hex64
+7 - String_TO_Hex64
+8 - mnemonic_to_pbkdf2
+9 - mnemonic_to_Hex64
+0 - Convert: QR  TO TXT (Have Image On Clipboard Already)
+- - Convert: TXT TO QR  (Have Data  On Clipboard Already)
 m - Readme
 \ - EXIT"
+
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
-'1') jumpto mma1;;
-'2') tmp=$(Hex64Rand); echo "$tmp"; toclip "$tmp"; crap;;
-'3') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_TO_WIF $tmp); echo "$tmp"; toclip "$tmp"; crap;;
-'4') echo 'Enter WIF:        '; read tmp; tmp=$(WIF_TO_Hex64 $tmp); echo "$tmp"; toclip "$tmp"; crap;;
-'5') echo 'Enter String:     '; read tmp; tmp=$(Str_TO_Hex64 $tmp); echo "$tmp"; toclip "$tmp"; crap;;
-'6') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
-'7') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
+'1') tmp=$(Hex64Rand); echo "$tmp"; toclip "$tmp"; crap;;
+'2') jumpto mma1;;
+'3') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_TO_WIF "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
+'4') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_to_mnemonic "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
+'5') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_TO_pbkdf2 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
+'6') echo 'Enter WIF:        '; read tmp; tmp=$(WIF_TO_Hex64 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
+'7') echo 'Enter String:     '; read tmp; tmp=$(Str_TO_Hex64 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
+'8') echo 'Enter mnemonic:   '; read tmp; tmp=$(mnemonic_to_pbkdf2 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
+'9') jumpto mma9;;
+'0') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
+'-') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
 'm') jumpto readme;;
 '\')  exit 0;;
   *)  jumpto mma;;
 esac; jumpto mma
+
 #=== Jumpto Landings after mma ==========================================================================================================
 mma1:
 clear; echo 'Input Private Key (HEX-64):'; read Hex64; clear
-PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); WIF=$(Hex64_TO_WIF "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64"); Addr2=$(Hex64_TO_Addr2 "$Hex64"); Addr3=$(Hex64_TO_Addr3 "$Hex64")
+
+mnemonic=$(Hex64_to_mnemonic "$Hex64"); pbkdf2=$(Hex64_TO_pbkdf2 "$Hex64")
+WIF=$(Hex64_TO_WIF "$Hex64"); xprv=$(Hex64_TO_xprv "$Hex64"); zprv=$(Hex64_TO_zprv "$Hex64"); yprv=$(Hex64_TO_yprv "$Hex64")
+xpub=$(Hex64_TO_xpub "$Hex64"); zpub=$(Hex64_TO_zpub "$Hex64"); ypub=$(Hex64_TO_ypub "$Hex64"); PubKeyHex130=$(Hex64_TO_PubKeyHex130 "$Hex64"); PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64"); Addr2=$(Hex64_TO_Addr2 "$Hex64"); Addr3=$(Hex64_TO_Addr3 "$Hex64")
+
 tmp=$(echo -e "Private Key:      $Hex64
-Public Key:       $PubKeyHex66
 WIF:              $WIF
+mnemonic:         $mnemonic
+pbkdf2:           $pbkdf2
+xprv:             $xprv
+zprv:             $zprv
+yprv:             $yprv
+
+PubKey(uncomp):   $PubKeyHex130
+PubKey(comp):     $PubKeyHex66
+xpub:             $xpub
+zpub:             $zpub
+ypub:             $ypub
 Addr p2pkh:       $Addr
 Addr p2wpkh:      $Addr2
 Addr p2wpkh-p2sh: $Addr3")
 echo "$tmp"; toclip "$tmp"; crap; jumpto mma
 ###################################
 readme:
-echo "##--- LINUX DEPS ---##
- sudo apt install -y base58 python3-pip xclip qrencode zbar-tools
-##--- PYTHON DEPS---##
- pip3 install base58 ecdsa pycryptodome"
+echo -e "##--- LINUX DEPS ---##\n sudo apt install -y base58 python3-pip xclip qrencode zbar-tools\n##--- PYTHON DEPS---## pip3 install base58 ecdsa pycryptodome bip32utils\n***   Need Mnemonic Word List File   @   $HOME/a-me/z-share/code/bitwords.txt   ***"
 crap; jumpto mma
+###################################
+mma9:
+wordlistfile="$HOME/a-me/z-share/code/bitwords.txt"
+clear; echo -e "==== 24 Word-Mnemonic TO Hex64 ===="; read tmp
+# Loop Through Each Word
+for i in $tmp; do
+  l1=$(grep -n -w "$i" "$wordlistfile" | cut -d: -f1)
+  l2=$((l1 - 1))
+  l2bin=$(printf "%011d" $(echo "obase=2;$l2" | bc))
+  phbin+="$l2bin"
+done
+phbinnosum="${phbin:0:-8}" #trim checksum off
+tmp=$(bin2hex "$phbinnosum"); echo "$tmp"; toclip "$tmp"; crap
+jumpto mma
 ###################################
