@@ -1,15 +1,27 @@
 #!/usr/bin/env bash
-# 20240708_1325_est_EJR
+# 20240708_2211_est_EJR
 # btcV2
 
 #=== bash functions ======================================================================================
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
+#######
 crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
+#######
 toclip() { echo -n "$1" | xclip -selection clipboard; }
+#######
 QrMaker() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(echo -e "$In1\n$(qrencode -t ASCIIi $In1)"); echo "$Out"; }
+#######
 QrReader() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "$Out"; rm /tmp/clipboard.png; }
+#######
 WIF_TO_Hex64() { local IN="$1"; local OUT; OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\'); OUT=${OUT,,}; OUT=${OUT:2}; OUT=${OUT:0:64}; echo -n "$OUT"; }
-
+#######
+Str_TO_Hex64() { echo -n "$1" | sha256sum | awk '{print $1}'; }
+#######
+Hex64_TO_WIF() {
+  local key=$1; local ext_key="80${key}01"
+  local checksum=$(echo -n "$(echo -n "$ext_key" | xxd -r -p | sha256sum -b | awk '{print $1}' | xxd -r -p | sha256sum -b | awk '{print $1}')" | head -c 8)
+  echo -n "$(echo -n "$ext_key$checksum" | xxd -r -p | base58)"
+} #######
 #=== python funtions =====================================================================================
 Hex64Rand() { python3 -c "import secrets; print(secrets.token_hex(32))"; }
 #######
@@ -19,31 +31,23 @@ import sys
 from ecdsa import SigningKey, SECP256k1
 key = SigningKey.from_string(bytes.fromhex(sys.argv[1]), curve=SECP256k1)
 print(key.verifying_key.to_string('compressed').hex())" "$1"
-}
-#######
-Hex64_TO_WIF() {
-  local key=$1; local ext_key="80${key}01"
-  local checksum=$(echo -n "$(echo -n "$ext_key" | xxd -r -p | sha256sum -b | awk '{print $1}' | xxd -r -p | sha256sum -b | awk '{print $1}')" | head -c 8)
-  echo -n "$(echo -n "$ext_key$checksum" | xxd -r -p | base58)"
-}
-#######
+} #######
 Hex64_TO_Addr() {
   python3 -c "
 import sys, hashlib, base58
-from Crypto.Hash import RIPEMD160
+from Cryptodome.Hash import RIPEMD160
 from ecdsa import SigningKey, SECP256k1
 key = SigningKey.from_string(bytes.fromhex(sys.argv[1]), curve=SECP256k1)
 pubkey = key.verifying_key.to_string('compressed').hex()
 rmd = RIPEMD160.new()
 rmd.update(hashlib.sha256(bytes.fromhex(pubkey)).digest())
 print(base58.b58encode_check(b'\x00' + rmd.digest()).decode())" "$1"
-}
-#######
+} #######
 Hex64_TO_Addr2() {
   python3 -c "
 import sys, hashlib
 from ecdsa import SigningKey, SECP256k1
-from Crypto.Hash import RIPEMD160
+from Cryptodome.Hash import RIPEMD160
 from functools import reduce
 
 GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
@@ -79,46 +83,44 @@ pubkey = key.verifying_key.to_string('compressed').hex()
 sha256 = hashlib.sha256(bytes.fromhex(pubkey)).digest()
 rmd = RIPEMD160.new(); rmd.update(sha256)
 print(bech32_encode('bc', [0] + convertbits(rmd.digest(), 8, 5)))" "$1"
-}
-#######
+} #######
 Hex64_TO_Addr3() {
   python3 -c "
 import sys, hashlib, base58
 from ecdsa import SigningKey, SECP256k1
-from Crypto.Hash import RIPEMD160
+from Cryptodome.Hash import RIPEMD160
 key = SigningKey.from_string(bytes.fromhex(sys.argv[1]), curve=SECP256k1)
 pubkey = key.verifying_key.to_string('compressed').hex()
 script_pubkey = b'\x00' + bytes([len(hashlib.sha256(bytes.fromhex(pubkey)).digest())]) + hashlib.sha256(bytes.fromhex(pubkey)).digest()
 rmd = RIPEMD160.new()
 rmd.update(script_pubkey)
 print(base58.b58encode_check(b'\x05' + rmd.digest()).decode())" "$1"
-}
-#######
+} #######
 
 #=== MMA ================================================================================================================================
 mma:
-clear
-echo -e "================  M a i n  M e n u  ==========================================
+clear; echo -e "================  M a i n  M e n u  ==========================================
 1 - Hex64_TO_WalletInfo
 2 - New_Hex64
 3 - Hex64_TO_WIF
 4 - WIF_TO_Hex64
-5 - Convert: QR  TO TXT (Have Image On Clipboard Already)
-6 - Convert: TXT TO QR  (Have Data  On Clipboard Already)
+5 - String_TO_Hex64
+6 - Convert: QR  TO TXT (Have Image On Clipboard Already)
+7 - Convert: TXT TO QR  (Have Data  On Clipboard Already)
 m - Readme
 \ - EXIT"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') jumpto mma1;;
 '2') tmp=$(Hex64Rand); echo "$tmp"; toclip "$tmp"; crap;;
 '3') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_TO_WIF $tmp); echo "$tmp"; toclip "$tmp"; crap;;
-'4') echo 'Enter WIF:'; read tmp; tmp=$(WIF_TO_Hex64 $tmp); echo "$tmp"; toclip "$tmp"; crap;;
-'5') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
-'6') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
+'4') echo 'Enter WIF:        '; read tmp; tmp=$(WIF_TO_Hex64 $tmp); echo "$tmp"; toclip "$tmp"; crap;;
+'5') echo 'Enter String:     '; read tmp; tmp=$(Str_TO_Hex64 $tmp); echo "$tmp"; toclip "$tmp"; crap;;
+'6') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
+'7') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
 'm') jumpto readme;;
 '\')  exit 0;;
   *)  jumpto mma;;
-esac
-jumpto mma
+esac; jumpto mma
 #=== Jumpto Landings after mma ==========================================================================================================
 mma1:
 clear; echo 'Input Private Key (HEX-64):'; read Hex64; clear
@@ -129,16 +131,12 @@ WIF:              $WIF
 Addr p2pkh:       $Addr
 Addr p2wpkh:      $Addr2
 Addr p2wpkh-p2sh: $Addr3")
-
-echo "$tmp"
-toclip "$tmp"
-crap; jumpto mma
-
+echo "$tmp"; toclip "$tmp"; crap; jumpto mma
+###################################
 readme:
 echo "##--- LINUX DEPS ---##
-sudo apt install -y base58 python3-pip xclip qrencode zbar-tools
-
+ sudo apt install -y base58 python3-pip xclip qrencode zbar-tools
 ##--- PYTHON DEPS---##
-pip3 install base58 ecdsa pycryptodome"
+ pip3 install base58 ecdsa pycryptodome"
 crap; jumpto mma
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+###################################
