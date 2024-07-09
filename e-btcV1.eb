@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240708_1325_est_EJR (ericjrich.com & ejrcnc.com)
+# 20240709_1458_est_EJR  (ericjrich.com & ejrcnc.com)
 # btcV1
 
 shopt -s dotglob
@@ -7,6 +7,25 @@ shopt -s dotglob
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 # F U N C T I O N S
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+mnemonic_to_pbkdf2() { python3 -c "
+import sys
+import hashlib
+
+def mnemonic_to_pbkdf2(mnemonic, salt=\"mnemonic\", iterations=2048, dklen=64):
+    mnemonic_bytes = mnemonic.encode(\"utf-8\")
+    salt_bytes = salt.encode(\"utf-8\")
+
+    # Derive the key using PBKDF2
+    derived_key = hashlib.pbkdf2_hmac(\"sha512\", mnemonic_bytes, salt_bytes, iterations, dklen)
+
+    return derived_key.hex()
+
+mnemonic = sys.argv[1]
+output = mnemonic_to_pbkdf2(mnemonic)
+print(output)" "$1"
+} #######
+
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
 pf1() { local bash2pyV1="$1"; local bash2pyV2="$2"; local Pycode_SRC=$(cat <<'PYEOF'
@@ -76,7 +95,7 @@ IFS='|' read -r PvKHex wif PbKHex PbKh160 PbAddr <<< "$pycode_OUT"
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
 ToLogs() { local Tl1="$PvKHex"; local PhLN; PbAddrUrl="https://mempool.space/address/$PbAddr"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
-local Tl2=$(hex2bin $Tl1); local Tl3=$(txt2sha256sum $Tl2 | awk '{print $1}' | cut -c1-2); local Tl4=$(hex2bin $Tl3); local Tl5=$Tl2$Tl4
+local Tl2=$(hex2bin $Tl1); local Tl3=$(Sha256bits $Tl2 | awk '{print $1}' | cut -c1-2); local Tl4=$(hex2bin $Tl3); local Tl5=$Tl2$Tl4
 local TlData=("Private Key: $PvKHex" "WIF(p2pkh): $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL: $PbAddrUrl")
 for (( i=0; i<${#Tl5}; i+=11 )); do Tl6=${Tl5:$i:11}; echo $((2#${Tl6})); done > "$PhFN"
 while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
@@ -89,14 +108,15 @@ echo -e "**********$(date -u '+%Y-%m-%d %H:%M:%S') UTC **************** $(date '
 *UserOGout1*      $userOGout1
 *Prv Key*         $PvKHex
 *WIF(p2pkh)*      $wif
+*PDKDF2 SEED*     $(mnemonic_to_pbkdf2 "$PhStr")
+*TESTING.PHRASE*  $PhStr
+*Entropy (bin)*   $Tl2
+*Checksum*        hex=$Tl3   bin= $Tl4
+*Entropy & Chksm* $Tl5
 *Pub Key*         $PbKHex
 *Pub Key Hash160* $PbKh160
 *Pub Addrs*       $PbAddr
 *URL*             $PbAddrUrl
-*Entropy (bin)*   $Tl2
-*Checksum*        hex=$Tl3   bin= $Tl4
-*Entropy & Chksm* $Tl5
-*TESTING.PHRASE*  $PhStr
 *Balance*         $balnow\tBTC
 *Volume*          $balvol\tBTC
 *************************************************************************************************************************************************************************
@@ -104,7 +124,7 @@ echo -e "**********$(date -u '+%Y-%m-%d %H:%M:%S') UTC **************** $(date '
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
 ToTerm() { PbAddrUrl=''; local Tt1="$PvKHex"; local PhLN; PbAddrUrl="https://mempool.space/address/$PbAddr"; toclip "$PbAddrUrl"
 touch "$PhFN"; > "$PhFN"; touch "$PhF"; > "$PhF"
-local Tt2=$(hex2bin $Tt1); local Tt3=$(txt2sha256sum $Tt2 | awk '{print $1}' | cut -c1-2); local Tt4=$(hex2bin $Tt3); local Tt5=$Tt2$Tt4
+local Tt2=$(hex2bin $Tt1); local Tt3=$(Sha256bits $Tt2 | awk '{print $1}' | cut -c1-2); local Tt4=$(hex2bin $Tt3); local Tt5=$Tt2$Tt4
 local TtData=("Private Key: $PvKHex" "WIF(p2pkh): $wif" "Public Key: $PbKHex" "Public Key Hash160: $PbKh160" "Address: $PbAddr" "URL: $PbAddrUrl")
 for (( i=0; i<${#Tt5}; i+=11 )); do Tt6=${Tt5:$i:11}; echo $((2#${Tt6})); done > "$PhFN"
 while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
@@ -117,14 +137,15 @@ echo -e "***********************************************************************
 *UserOGout1*      $userOGout1
 ${TInvert}${TBold}${TFYel}*Prv Key*         ${TFBlu}$PvKHex${TOff}
 ${TInvert}${TBold}${TFYel}*WIF(p2pkh)*      ${TFBlu}$wif${TOff}
+${TInvert}${TBold}${TFYel}*PDKDF2 SEED*     ${TFBlu}$(mnemonic_to_pbkdf2 "$PhStr")${TOff}
+${TDim}*TESTING.PHRASE*  $PhStr${TOff}
+*Entropy (bin)*   $Tt2
+*Checksum*        hex= $Tt3    bin=$Tt4
+*Entropy & Chksm* $Tt5
 *Pub Key*         $PbKHex
 *Pub Key Hash160* $PbKh160
 ${TInvert}${TBold}${TFYel}*Pub Addrs*       ${TFBlu}$PbAddr${TOff}
 *URL [Copied]*    $PbAddrUrl
-*Entropy (bin)*   $Tt2
-*Checksum*        hex= $Tt3    bin=$Tt4
-*Entropy & Chksm* $Tt5
-${TDim}*TESTING.PHRASE*  $PhStr${TOff}
 ${TInvert}${TBold}${TFYel}*Balance*         ${TFBlu}$balnow\tBTC${TOff}
 ${TInvert}${TBold}${TFYel}*Volume*          ${TFBlu}$balvol\tBTC${TOff}
 *************************************************************************************************************************************************************************
@@ -291,7 +312,7 @@ bin2hex() { local bin="$1"; local hex=""; while (( (i + ${#bin}) % 4 != 0 )); do
 hex2bin() { local hex=$1; for ((i=0; i<${#hex}; i++)); do case ${hex:$i:1} in 0) echo -n "0000" ;; 1) echo -n "0001" ;; 2) echo -n "0010" ;; 3) echo -n "0011" ;; 4) echo -n "0100" ;; 5) echo -n "0101" ;; 6) echo -n "0110" ;; 7) echo -n "0111" ;; 8) echo -n "1000" ;; 9) echo -n "1001" ;; [Aa]) echo -n "1010" ;; [Bb]) echo -n "1011" ;; [Cc]) echo -n "1100" ;; [Dd]) echo -n "1101" ;; [Ee]) echo -n "1110" ;; [Ff]) echo -n "1111" ;; esac; done; }
 dec2hex() { local dec="$1"; local hex=""; hex=$(echo "ibase=10; obase=16; $dec" | bc); echo -n "${hex,,}"; }
 hex2dec() { local hex="$1"; local bin=$(hex2bin "$hex"); local dec=$(bin2dec "$bin"); echo -n "$dec"; }
-#NOT IN USE:: Sha256bits() { echo -n $1 | shasum -a 256 -0 | tr -d '\n\\'; } #ALSO WORKS: Sha256bits() { echo -n $1 | shasum -a 256 -0 | awk '{print $1}'; }
+Sha256bits() { echo -n $1 | shasum -a 256 -0 | tr -d '\n\\'; } #ALSO WORKS: Sha256bits() { echo -n $1 | shasum -a 256 -0 | awk '{print $1}'; }
 txt2sha256sum() { echo -n "$1" | sha256sum | awk '{print $1}'; } # same= { echo -n "$1" | shasum -a 256 | awk '{print $1}'; }
 txt2sha512sum() { echo -n "$1" | sha512sum | awk '{print $1}'; }
 wif2prv() { local IN="$1"; local OUT; OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\'); OUT=${OUT,,}; OUT=${OUT:2}; OUT=${OUT:0:64}; echo -n "$OUT"; }
@@ -308,8 +329,10 @@ wipevars() { for i in "${vars2wipe[@]}"; do eval $i=""; done; }
 Dep_Pip3=(mnemonic ecdsa pycryptodome pyperclip qrcode base58)
 Dep_Apt=(); Dep_Apt+=(base58 basez dc espeak feh festival figlet flite gifsicle gnupg hashalot imagemagick img2pdf jp2a jpegoptim jq minimodem oathtool openssl pandoc pngcrush python3 python3-pip qrencode ruby-ascii85 sox speech-dispatcher tesseract-ocr webcamoid webp whiptail wkhtmltopdf xautomation xbindkeys xclip xdotool yad zbar-tools zenity zint-qt); Dep_Apt+=(python3-base58 python3-ecdsa python3-mnemonic python3-pycryptodome python3-pyperclip python3-qrcode)
 PhFN="/tmp/numbers.txt"; PhF="/tmp/seed_phrase.txt"
-if [ -d "$HOME/Desktop" ]; then logF="$HOME/Desktop/basexQR.txt"; else logF="/tmp/basexQR.txt"; fi; if [ -d "$HOME/Desktop" ]; then logF1="$HOME/Desktop/basexTXT.txt"; else logF1="/tmp/basexTXT.txt"; fi
-tv1="$HOME/a-me/z-share/code/bitwords.txt"; tv2="/etc/skel/a-me/z-share/code/bitwords.txt"; if [ ! -f "$tv1" ] && [ ! -f "$tv2" ]; then bitwords=$(dialog --title "File Selection" --fselect / 0 0 --stdout); if [ ! -f "$bitwords" ]; then echo "No valid file selected."; exit 1; fi; elif [ -f "$tv1" ]; then bitwords="$tv1"; else bitwords="$tv2"; fi
+logF="$HOME/Desktop/basexQR.txt"
+logF1="$HOME/Desktop/basexTXT.txt"
+bitwords="$HOME/a-me/z-share/code/bitwords.txt"
+
 #text effects
 TOff='\e[0m'; TFBlk='\e[30m'; TFRed='\e[31m'; TFGre='\e[32m'; TFYel='\e[33m'; TFBlu='\e[34m'; TFMag='\e[35m'; TFCya='\e[36m'; TFWhi='\e[37m'; TBBlk='\e[40m'; TBRed='\e[41m'; TBGre='\e[42m'; TBYel='\e[43m'; TBBlu='\e[44m'; TBMag='\e[45m'; TBCya='\e[46m'; TBWhi='\e[47m'; TBold='\e[1m'; TDim='\e[2m'; TItalic='\e[3m'; TUnderline='\e[4m'; TBlink='\e[5m'; TInvert='\e[7m'; TConceal='\e[8m'
 TPipe="${TBCya}|${TOff}"; TFavs="${TFYel}${TBold}"
@@ -356,7 +379,7 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '4')  echo -e "*Largest (DEC)* (78 chars)= 115792089237316195423570985008687907852837564279074904382605163141518161494336\n\nEnter Prv Key (dec):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(dec2hex "$prvkeyin"); prvkeyin=$(printf "%064s" "$prvkeyin" | tr ' ' 'f'); userOGout="$prvkeyin"; pf1 '1' "$prvkeyin"; jumpto mmb;;
 '5')  echo -e "\n\nEnter WIF (b58 51-52 chars):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=$(wif2prv "$prvkeyin"); userOGout="$prvkeyin"; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
 '6')  echo -e "\n\nEnter String For Conversion (sha256sum):"; read prvkeyin; userOGin="$prvkeyin"; prvkeyin=$(txt2sha256sum "$prvkeyin"); userOGout="$prvkeyin"; prvkeyin=${prvkeyin,,}; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 64 ]; then prvkeyinpadding=$((64 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; pf1 '1' "$prvkeyin"; jumpto mmb;;
-'7')  prvkeyin=$(randtest); userOGin="$prvkeyin"; prvkeyinlength=${#prvkeyin}; if [ $prvkeyinlength -lt 256 ]; then prvkeyinpadding=$((256 - prvkeyinlength)); prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding)); prvkeyin="${prvkeyinzeros}${prvkeyin}"; fi; prvkeyin=$(echo -n "$prvkeyin"); prvkeyin=$(bin2hex "$prvkeyin"); userOGout="$prvkeyin"; pf1 '1' "$prvkeyin"; jumpto mmb;;
+'7')  jumpto mma7;;
 '8')  jumpto mma8;;
 '9')  jumpto mma9;;
 '0')  jumpto mma0;;
@@ -376,52 +399,45 @@ esac
 jumpto mma
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+mma7:
+  clear
+  echo -e "==== Mnemonic 2 pbkdf2 seed ====\n"; read prvkeyin; userOGin="$prvkeyin"
+  tmp=$(mnemonic_to_pbkdf2 "$prvkeyin")
+  echo "$tmp"; crap
+jumpto mma
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------
 mma8:
-  # Make A Name For The Master Word List That Is Easier To Recognize
-    WordListFile="$bitwords"; FileToStoreNumbers="$PhFN"; FileToStoreSeedPhrase="$PhF"
   # Get Phrase From User
-    clear; echo -e "==== Mnemonic 2 PrvKey ====\n  FYI: (Requires File bitwords.txt\nEnter Phrase:"; read PhraseWordStringSpaced
+    clear; echo -e "==== Mnemonic 2 PrvKey ===="; read PhraseWordStringSpaced; userOGin="$PhraseWordStringSpaced"
   # Loop Through Each Word
     for ThisWord in $PhraseWordStringSpaced; do
-      # Get The Raw numberic value for the line number of the word
-      ThisLineDecRaw=$(grep -n -w "$ThisWord" "$WordListFile" | cut -d: -f1)
-      # Subtract 1 from the raw number to get a usable number (this is because we start with line 1 and zero is a possibility so we subtract 1) [could probably be explained better]
-      ThisLineDecCalc=$((ThisLineDecRaw - 1))
-      # convert last number to binary
-      ThisLineDecCalcToBin=$(printf "%011d" $(echo "obase=2;$ThisLineDecCalc" | bc))
-      # add last binary to a string
-      PhraseBinaryString+="$ThisLineDecCalcToBin"
+      ThisLineDecRaw=$(grep -n -w "$ThisWord" "$bitwords" | cut -d: -f1) # Raw LineNum Per Word
+      ThisLineDecCalc=$((ThisLineDecRaw - 1)) # ( LineNums - 1 )
+      ThisLineDecCalcToBin=$(printf "%011d" $(echo "obase=2;$ThisLineDecCalc" | bc)) # LineNums To Bin
+      PhraseBinaryString+="$ThisLineDecCalcToBin" #add number as bin to the chain
     done
-  # Chop Off The Checksum From The Binary String
+  # Remove Checksum Bytes From the end of the chain
     if [ ${#PhraseBinaryString} -eq 264 ]; then PhraseBinaryStringNoChecksum="${PhraseBinaryString:0:-8}"
       elif [ ${#PhraseBinaryString} -eq 132 ]; then PhraseBinaryStringNoChecksum="${PhraseBinaryString:0:-4}"
       else clear; echo 'Length issue with words'; sleep 2; jumpto mma
     fi
   # Prep For MMB
-    prvkeyin=$(bin2hex "$PhraseBinaryStringNoChecksum")
-    userOGin="$prvkeyin"
-    prvkeyin=${prvkeyin,,}
-    prvkeyinlength=${#prvkeyin}
-    if [ $prvkeyinlength -lt 64 ]; then
-      prvkeyinpadding=$((64 - prvkeyinlength))
-      prvkeyinzeros=$(printf '0%.0s' $(seq 1 $prvkeyinpadding))
-      prvkeyin="${prvkeyinzeros}${prvkeyin}"
-    fi
-    pf1 '1' "$prvkeyin"
+prvkeyin="$PhraseBinaryStringNoChecksum"
+prvkeyinlength=${#prvkeyin}
+prvkeyin=$(echo -n "$prvkeyin")
+prvkeyin=$(bin2hex "$prvkeyin")
+userOGout="$prvkeyin"
+pf1 '1' "$prvkeyin"
 jumpto mmb
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
 mma9:
 #===testing====
-
-  # Make A Name For The Master Word List That Is Easier To Recognize
-  WordListFile="$bitwords"
   # Display A Prompt To Get The Words From The User Seperated By Spaces In A String
   clear; echo -e "==== Mnemonic 2 binaries ====\n  FYI: (Requires File @ bitwords.txt\nEnter Phrase:"; read PhraseWordStringSpaced
   # Loop Through Each Word
   for ThisWord in $PhraseWordStringSpaced; do
     # Get The Raw numberic value for the line number of the word
-    ThisLineDecRaw=$(grep -n -w "$ThisWord" "$WordListFile" | cut -d: -f1)
+    ThisLineDecRaw=$(grep -n -w "$ThisWord" "$bitwords" | cut -d: -f1)
     # Subtract 1 from the raw number to get a usable number (this is because we start with line 1 and zero is a possibility so we subtract 1) [could probably be explained better]
     ThisLineDecCalc=$((ThisLineDecRaw - 1))
     # convert last number to binary
