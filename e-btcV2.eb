@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# 20240710_1216_est_EJR
+# 20240710_1443_est_EJR
 # btcV2
 #=== bash functions ======================================================================================
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
 crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
 toclip() { echo -n "$1" | xclip -selection clipboard; }
-QrMaker() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(echo -e "$In1\n$(qrencode -t ASCIIi $In1)"); echo "$Out"; }
+cam2txt() { local tfile="/tmp/qrtmp.txt"; test_webcam() { ffmpeg -f v4l2 -i "$1" -frames:v 1 -f rawvideo -y /dev/null &> /dev/null; if [ $? -eq 0 ]; then return 0; fi; return 1; }; capture_and_decode_qr() { zbarcam --raw "$1" > "$tfile" & zbarcam_pid=$!; while true; do if [ -s "$tfile" ]; then qr_text=$(cat "$tfile"); rm "$tfile"; kill $zbarcam_pid; echo "$qr_text"; return 0; fi; sleep 1; done; return 1; }; found_any=false; for device in /dev/video*; do if [ -e "$device" ]; then if test_webcam "$device"; then found_any=true; qr_text=$(capture_and_decode_qr "$device"); if [ $? -eq 0 ]; then echo "$qr_text"; return 0; fi; fi; fi; done; if ! $found_any; then echo "No working webcam found."; return 1; fi; return 0; }
 QrReader() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "$Out"; rm /tmp/clipboard.png; }
+QrMaker() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(echo -e "$In1\n$(qrencode -t ASCIIi $In1)"); echo "$Out"; }
+balnvol() { local ADDRESS="$1"; local RESPONSE=$(curl -sSL "https://mempool.space/api/address/$ADDRESS"); local TOTAL_RECEIVED=$(echo "$RESPONSE" | jq -r '.chain_stats.funded_txo_sum'); local SPENT=$(echo "$RESPONSE" | jq -r '.chain_stats.spent_txo_sum'); local BALANCE=$((TOTAL_RECEIVED - SPENT)); TOTAL_RECEIVED_BTC=$(echo "scale=8; $TOTAL_RECEIVED / 100000000" | bc); BALANCE_BTC=$(echo "scale=8; $BALANCE / 100000000" | bc); echo -e " BAL= $BALANCE_BTC\n VOL= $TOTAL_RECEIVED_BTC"; }
 change_version_bytes() { local ext_key="$1"; local new_version="$2"; local decoded_hex=$(echo "$ext_key" | base58 -d | xxd -p -c 256); local new_hex="${new_version}${decoded_hex:8}"; echo "$new_hex" | xxd -r -p | base58; }
 WIF_TO_Hex64() { local IN="$1"; local OUT; OUT=$(echo -n "$IN" | base58 -d | xxd -p | tr -d '\n\\'); OUT=${OUT,,}; OUT=${OUT:2}; OUT=${OUT:0:64}; echo -n "$OUT"; }
 Str_TO_Hex64() { echo -n "$1" | sha256sum | awk '{print $1}'; }
@@ -16,14 +18,6 @@ Hex64_TO_ypub() { local xpub=$(Hex64_TO_xpub "$1"); change_version_bytes "$xpub"
 Hex64_TO_zpub() { local xpub=$(Hex64_TO_xpub "$1"); change_version_bytes "$xpub" "04b24746"; }
 Hex64_TO_WIF() { local key=$1; local ext_key="80${key}01"; local checksum=$(echo -n "$(echo -n "$ext_key" | xxd -r -p | sha256sum -b | awk '{print $1}' | xxd -r -p | sha256sum -b | awk '{print $1}')" | head -c 8); echo -n "$(echo -n "$ext_key$checksum" | xxd -r -p | base58)"; }
 bin2hex() { local bin="$1"; local hex=""; while (( (i + ${#bin}) % 4 != 0 )); do bin="0$bin"; done; for ((i = 0; i < ${#bin}; i += 4)); do chunk="${bin:i:4}"; case "$chunk" in 0000) hex+="0" ;; 0001) hex+="1" ;; 0010) hex+="2" ;; 0011) hex+="3" ;; 0100) hex+="4" ;; 0101) hex+="5" ;; 0110) hex+="6" ;; 0111) hex+="7" ;; 1000) hex+="8" ;; 1001) hex+="9" ;; 1010) hex+="a" ;; 1011) hex+="b" ;; 1100) hex+="c" ;; 1101) hex+="d" ;; 1110) hex+="e" ;; 1111) hex+="f" ;; *) echo "Invalid binary input: $chunk"; return 1 ;; esac; done; echo -n "$hex"; }
-
-cam2txt() {
-  local tfile="/tmp/qrtmp.txt"
-  test_webcam() { ffmpeg -f v4l2 -i "$1" -frames:v 1 -f rawvideo -y /dev/null &> /dev/null; if [ $? -eq 0 ]; then return 0; fi; return 1; }
-  capture_and_decode_qr() { zbarcam --raw "$1" > "$tfile" & zbarcam_pid=$!; while true; do if [ -s "$tfile" ]; then qr_text=$(cat "$tfile"); rm "$tfile"; kill $zbarcam_pid; echo "$qr_text"; return 0; fi; sleep 1; done; return 1; }
-  found_any=false; for device in /dev/video*; do if [ -e "$device" ]; then if test_webcam "$device"; then found_any=true; qr_text=$(capture_and_decode_qr "$device"); if [ $? -eq 0 ]; then echo "$qr_text"; return 0; fi; fi; fi; done
-  if ! $found_any; then echo "No working webcam found."; return 1; fi; return 0
-}
 #=== python funtions =====================================================================================
 Hex64Rand() { python3 -c "import secrets; print(secrets.token_hex(32))"; }
 #######
@@ -240,84 +234,41 @@ rmd.update(script_pubkey)
 print(base58.b58encode_check(b'\x05' + rmd.digest()).decode())" "$1"
 } #######
 
+#=====vars==============================================
+wordlistfile="$HOME/a-me/z-share/code/bitwords.txt"
+
 #=== MMA ================================================================================================================================
 mma:
 clear; echo -e "================  M a i n  M e n u  ==========================================
-1 - New_Hex64
-2 - Hex64_TO_WalletInfo
-3 - Hex64_TO_WIF
-4 - Hex64_TO_mnemonic24
-5 - Hex64_TO_pbkdf2
-6 - WIF_TO_Hex64
-7 - String_TO_Hex64
-8 - mnemonic24_to_pbkdf2
-9 - mnemonic24_to_Hex64
-q - QRcam TO TXT (needs webcam)
-w - QRimg TO TXT (Have IMG On Clipboard)
-e - TXT TO QR    (Have TXT On Clipboard)
-m - Readme
-\ - EXIT"
-
+( 1 ) Info  FROM  Hex64
+( 2 ) Info  FROM  Random
+( 3 ) Info  FROM  WIF
+( 4 ) Info  FROM  String
+( 5 ) Info  FROM  24_Words
+( 6 ) TXT   FROM  QR.Camera (Camera)
+( 7 ) TXT   FROM  QR.Image  (Clipboard)
+( 8 ) QR    FROM  TXT       (Clipboard)
+( 9 ) Readme
+( \ ) EXIT"
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
-'1') tmp=$(Hex64Rand); echo "$tmp"; toclip "$tmp"; crap;;
-'2') jumpto mma1;;
-'3') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_TO_WIF "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
-'4') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_to_mnemonic "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
-'5') echo 'Enter 64 Char Hex:'; read tmp; tmp=$(Hex64_TO_pbkdf2 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
-'6') echo 'Enter WIF:        '; read tmp; tmp=$(WIF_TO_Hex64 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
-'7') echo 'Enter String:     '; read tmp; tmp=$(Str_TO_Hex64 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
-'8') echo 'Enter mnemonic24:   '; read tmp; tmp=$(mnemonic_to_pbkdf2 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
-'9') jumpto mma9;;
-'q') tmp="$(cam2txt)"; echo "$tmp"; toclip "$tmp"; crap;;
-'w') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
-'e') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
-'m') jumpto readme;;
+'1') echo 'Input Private Key (HEX-64):'; read Hex64; jumpto mma1;;
+'2') Hex64=$(Hex64Rand); jumpto mma1;;
+'3') echo 'Enter WIF:   '; read tmp; Hex64=$(WIF_TO_Hex64 "$tmp"); jumpto mma1;;
+'4') echo 'Enter String:'; read tmp; Hex64=$(Str_TO_Hex64 "$tmp"); jumpto mma1;;
+'5') echo 'Enter 24_Word'; read tmp; for i in $tmp; do l1=$(grep -n -w "$i" "$wordlistfile" | cut -d: -f1); l2=$((l1 - 1)); l2bin=$(printf "%011d" $(echo "obase=2;$l2" | bc)); phbin+="$l2bin"; done; phbinnosum="${phbin:0:-8}"; Hex64=$(bin2hex "$phbinnosum"); jumpto mma1;;
+'6') tmp="$(cam2txt)"; echo "$tmp"; toclip "$tmp"; crap;;
+'7') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
+'8') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
+'9') jumpto readme;;
 '\')  exit 0;;
   *)  jumpto mma;;
 esac; jumpto mma
-
 #=== Jumpto Landings after mma ==========================================================================================================
 mma1:
-clear; echo 'Input Private Key (HEX-64):'; read Hex64; clear
-
-mnemonic=$(Hex64_to_mnemonic "$Hex64"); pbkdf2=$(Hex64_TO_pbkdf2 "$Hex64")
-WIF=$(Hex64_TO_WIF "$Hex64"); xprv=$(Hex64_TO_xprv "$Hex64"); zprv=$(Hex64_TO_zprv "$Hex64"); yprv=$(Hex64_TO_yprv "$Hex64")
-xpub=$(Hex64_TO_xpub "$Hex64"); zpub=$(Hex64_TO_zpub "$Hex64"); ypub=$(Hex64_TO_ypub "$Hex64"); PubKeyHex130=$(Hex64_TO_PubKeyHex130 "$Hex64"); PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64"); Addr2=$(Hex64_TO_Addr2 "$Hex64"); Addr3=$(Hex64_TO_Addr3 "$Hex64")
-
-tmp=$(echo -e " Private Key:\n$Hex64
- WIF:\n$WIF
- mnemonic24:\n$mnemonic
- pbkdf2:\n$pbkdf2
- -------------
- xprv:\n$xprv
- zprv:\n$zprv
- yprv:\n$yprv
- -------------
- PubKey(uncomp):\n$PubKeyHex130
- PubKey(comp):\n$PubKeyHex66
- xpub:\n$xpub
- zpub:\n$zpub
- ypub:\n$ypub
- Addr p2pkh:\n$Addr
- Addr p2wpkh:\n$Addr2
- Addr p2wpkh-p2sh:\n$Addr3")
-echo "$tmp"; toclip "$tmp"; crap; jumpto mma
+clear; mnemonic=$(Hex64_to_mnemonic "$Hex64"); pbkdf2=$(Hex64_TO_pbkdf2 "$Hex64"); WIF=$(Hex64_TO_WIF "$Hex64"); xprv=$(Hex64_TO_xprv "$Hex64"); zprv=$(Hex64_TO_zprv "$Hex64"); yprv=$(Hex64_TO_yprv "$Hex64"); xpub=$(Hex64_TO_xpub "$Hex64"); zpub=$(Hex64_TO_zpub "$Hex64"); ypub=$(Hex64_TO_ypub "$Hex64"); PubKeyHex130=$(Hex64_TO_PubKeyHex130 "$Hex64"); PubKeyHex66=$(Hex64_TO_PubKeyHex66 "$Hex64"); Addr=$(Hex64_TO_Addr "$Hex64"); Addr2=$(Hex64_TO_Addr2 "$Hex64"); Addr3=$(Hex64_TO_Addr3 "$Hex64"); tmp=$(echo -e "...Private Key...\n$Hex64\n...WIF...\n$WIF\n...mnemonic24...\n$mnemonic\n...pbkdf2...\n$pbkdf2\n...xprv...\n$xprv\n...zprv...\n$zprv\n...yprv...\n$yprv\n...PubKey(uncomp)...\n$PubKeyHex130\n...PubKey(comp)...\n$PubKeyHex66\n...xpub...\n$xpub\n...zpub...\n$zpub\n...ypub...\n$ypub\n...Addr p2pkh...\n$Addr\n$(balnvol $Addr)\n...Addr p2wpkh...\n$Addr2\n$(balnvol $Addr2)\n...Addr p2wpkh-p2sh...\n$Addr3\n$(balnvol $Addr3)"); echo "$tmp"; toclip "$tmp"
+crap; jumpto mma
 ###################################
 readme:
 echo -e "##--- LINUX DEPS ---##\n sudo apt install -y base58 python3-pip xclip qrencode zbar-tools v4l-utils fswebcam\n##--- PYTHON DEPS---## pip3 install base58 ecdsa pycryptodome bip32utils\n***   Need Mnemonic Word List File   @   $HOME/a-me/z-share/code/bitwords.txt   ***"
 crap; jumpto mma
-###################################
-mma9:
-wordlistfile="$HOME/a-me/z-share/code/bitwords.txt"
-clear; echo -e "==== 24 Word-Mnemonic TO Hex64 ===="; read tmp
-# Loop Through Each Word
-for i in $tmp; do
-  l1=$(grep -n -w "$i" "$wordlistfile" | cut -d: -f1)
-  l2=$((l1 - 1))
-  l2bin=$(printf "%011d" $(echo "obase=2;$l2" | bc))
-  phbin+="$l2bin"
-done
-phbinnosum="${phbin:0:-8}" #trim checksum off
-tmp=$(bin2hex "$phbinnosum"); echo "$tmp"; toclip "$tmp"; crap
-jumpto mma
 ###################################
