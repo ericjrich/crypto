@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240709_2023_est_EJR
+# 20240710_1216_est_EJR
 # btcV2
 #=== bash functions ======================================================================================
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
@@ -16,6 +16,14 @@ Hex64_TO_ypub() { local xpub=$(Hex64_TO_xpub "$1"); change_version_bytes "$xpub"
 Hex64_TO_zpub() { local xpub=$(Hex64_TO_xpub "$1"); change_version_bytes "$xpub" "04b24746"; }
 Hex64_TO_WIF() { local key=$1; local ext_key="80${key}01"; local checksum=$(echo -n "$(echo -n "$ext_key" | xxd -r -p | sha256sum -b | awk '{print $1}' | xxd -r -p | sha256sum -b | awk '{print $1}')" | head -c 8); echo -n "$(echo -n "$ext_key$checksum" | xxd -r -p | base58)"; }
 bin2hex() { local bin="$1"; local hex=""; while (( (i + ${#bin}) % 4 != 0 )); do bin="0$bin"; done; for ((i = 0; i < ${#bin}; i += 4)); do chunk="${bin:i:4}"; case "$chunk" in 0000) hex+="0" ;; 0001) hex+="1" ;; 0010) hex+="2" ;; 0011) hex+="3" ;; 0100) hex+="4" ;; 0101) hex+="5" ;; 0110) hex+="6" ;; 0111) hex+="7" ;; 1000) hex+="8" ;; 1001) hex+="9" ;; 1010) hex+="a" ;; 1011) hex+="b" ;; 1100) hex+="c" ;; 1101) hex+="d" ;; 1110) hex+="e" ;; 1111) hex+="f" ;; *) echo "Invalid binary input: $chunk"; return 1 ;; esac; done; echo -n "$hex"; }
+
+cam2txt() {
+  local tfile="/tmp/qrtmp.txt"
+  test_webcam() { ffmpeg -f v4l2 -i "$1" -frames:v 1 -f rawvideo -y /dev/null &> /dev/null; if [ $? -eq 0 ]; then return 0; fi; return 1; }
+  capture_and_decode_qr() { zbarcam --raw "$1" > "$tfile" & zbarcam_pid=$!; while true; do if [ -s "$tfile" ]; then qr_text=$(cat "$tfile"); rm "$tfile"; kill $zbarcam_pid; echo "$qr_text"; return 0; fi; sleep 1; done; return 1; }
+  found_any=false; for device in /dev/video*; do if [ -e "$device" ]; then if test_webcam "$device"; then found_any=true; qr_text=$(capture_and_decode_qr "$device"); if [ $? -eq 0 ]; then echo "$qr_text"; return 0; fi; fi; fi; done
+  if ! $found_any; then echo "No working webcam found."; return 1; fi; return 0
+}
 #=== python funtions =====================================================================================
 Hex64Rand() { python3 -c "import secrets; print(secrets.token_hex(32))"; }
 #######
@@ -244,8 +252,9 @@ clear; echo -e "================  M a i n  M e n u  ============================
 7 - String_TO_Hex64
 8 - mnemonic24_to_pbkdf2
 9 - mnemonic24_to_Hex64
-0 - Convert: QR  TO TXT (Have Image On Clipboard Already)
-- - Convert: TXT TO QR  (Have Data  On Clipboard Already)
+q - QRcam TO TXT (needs webcam)
+w - QRimg TO TXT (Have IMG On Clipboard)
+e - TXT TO QR    (Have TXT On Clipboard)
 m - Readme
 \ - EXIT"
 
@@ -259,8 +268,9 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '7') echo 'Enter String:     '; read tmp; tmp=$(Str_TO_Hex64 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
 '8') echo 'Enter mnemonic24:   '; read tmp; tmp=$(mnemonic_to_pbkdf2 "$tmp"); echo "$tmp"; toclip "$tmp"; crap;;
 '9') jumpto mma9;;
-'0') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
-'-') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
+'q') tmp="$(cam2txt)"; echo "$tmp"; toclip "$tmp"; crap;;
+'w') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
+'e') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
 'm') jumpto readme;;
 '\')  exit 0;;
   *)  jumpto mma;;
@@ -294,7 +304,7 @@ tmp=$(echo -e " Private Key:\n$Hex64
 echo "$tmp"; toclip "$tmp"; crap; jumpto mma
 ###################################
 readme:
-echo -e "##--- LINUX DEPS ---##\n sudo apt install -y base58 python3-pip xclip qrencode zbar-tools\n##--- PYTHON DEPS---## pip3 install base58 ecdsa pycryptodome bip32utils\n***   Need Mnemonic Word List File   @   $HOME/a-me/z-share/code/bitwords.txt   ***"
+echo -e "##--- LINUX DEPS ---##\n sudo apt install -y base58 python3-pip xclip qrencode zbar-tools v4l-utils fswebcam\n##--- PYTHON DEPS---## pip3 install base58 ecdsa pycryptodome bip32utils\n***   Need Mnemonic Word List File   @   $HOME/a-me/z-share/code/bitwords.txt   ***"
 crap; jumpto mma
 ###################################
 mma9:
