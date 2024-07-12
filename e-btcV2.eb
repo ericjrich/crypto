@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240710_1443_est_EJR
+# 20240711_2120_est_EJR
 # btcV2
 #=== bash functions ======================================================================================
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
@@ -248,8 +248,11 @@ clear; echo -e "================  M a i n  M e n u  ============================
 ( 6 ) TXT   FROM  QR.Camera (Camera)
 ( 7 ) TXT   FROM  QR.Image  (Clipboard)
 ( 8 ) QR    FROM  TXT       (Clipboard)
-( 9 ) Readme
+( 9 ) BAL   FROM  ADDR      IN  BASH
+( 0 ) BAL   FROM  ADDR      IN  BROWSER
+( - ) Readme
 ( \ ) EXIT"
+
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '1') echo 'Input Private Key (HEX-64):'; read Hex64; jumpto mma1;;
 '2') Hex64=$(Hex64Rand); jumpto mma1;;
@@ -259,7 +262,9 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '6') tmp="$(cam2txt)"; echo "$tmp"; toclip "$tmp"; crap;;
 '7') tmp="$(QrReader)"; echo "$tmp"; toclip "$tmp"; crap;;
 '8') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
-'9') jumpto readme;;
+'9') clear; echo 'Enter Address'; read tmp; balnvol "$tmp"; crap;;
+'0') clear; echo 'Enter Address'; read tmp; xdg-open "https://mempool.space/address/$tmp" >>/dev/null 2>&1 & disown;;
+'-') jumpto readme;;
 '\')  exit 0;;
   *)  jumpto mma;;
 esac; jumpto mma
