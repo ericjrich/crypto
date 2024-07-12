@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# 20240710_1837_est_EJR
+# qr wizard
+#
+#=== bash functions ======================================================================================
+#ocrclip2txt() { xclip -selection clipboard -t image/png -o > /tmp/ocr.png; local ocr_result=$(tesseract /tmp/ocr.png - 2>/dev/null); if [ -n "$ocr_result" ]; then echo -n "$ocr_result" | xclip -selection clipboard; echo "ocr result copied to clipboard: $ocr_result"; else echo "Failed to decode ocr."; fi; rm -f /tmp/ocr.png; }
+jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
+crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
+
+tocliptxt() { echo -n "$1" | xclip -selection clipboard; }
+toclipimg() { xclip -selection clipboard -t image/png -i "$1"; }
+fromcliptxt() { xclip -selection clipboard -o; }
+fromclipimg() { xclip -selection clipboard -t image/png -o > /tmp/fromclipimg.png; cat /tmp/fromclipimg.png; }
+CamQrToTxt() { local tfile="/tmp/CamQrToTxt.txt"; test_webcam() { ffmpeg -f v4l2 -i "$1" -frames:v 1 -f rawvideo -y /dev/null &> /dev/null; if [ $? -eq 0 ]; then return 0; fi; return 1; }; capture_and_decode_qr() { zbarcam --raw "$1" > "$tfile" & zbarcam_pid=$!; while true; do if [ -s "$tfile" ]; then qr_text=$(cat "$tfile"); rm "$tfile"; kill $zbarcam_pid; echo "$qr_text"; return 0; fi; sleep 1; done; return 1; }; found_any=false; for device in /dev/video*; do if [ -e "$device" ]; then if test_webcam "$device"; then found_any=true; qr_text=$(capture_and_decode_qr "$device"); if [ $? -eq 0 ]; then echo "$qr_text"; return 0; fi; fi; fi; done; if ! $found_any; then echo "No working webcam found."; return 1; fi; return 0; }
+ClipQrToTxt() { xclip -selection clipboard -t image/png -o > /tmp/ClipQrToTxt.png; local Out=$(zbarimg --quiet --raw /tmp/ClipQrToTxt.png); echo "$Out"; rm /tmp/ClipQrToTxt.png; }
+ClipTxtToQr() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(echo -n "$In1" | qrencode -t ANSIUTF8 -o -); echo "$Out"; }
+ClipTxtToB64() { local In=$(xclip -o -selection clipboard); if [ -z "$In" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(echo -n "$In" | base64); echo -n "$Out"; }
+ClipB64ToTxt() { local In=$(xclip -o -selection clipboard); if [ -z "$In" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(echo -n "$In" | base64 -d); echo -n "$Out"; }
+
+
+#=== MMA ================================================================================================================================
+mma:
+clear; echo -e "================  M a i n  M e n u  ==========================================
+( 1 ) Camera_QR         TO  TXT
+( 2 ) CLipboard_QR      TO  TXT
+( 3 ) Clipboard_TXT     TO  QR
+( 4 ) Clipboard_TXT     TO  BASE64
+( 5 ) Clipboard_BASE64  TO  TXT
+( - ) Readme
+( \ ) EXIT"
+read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
+'1') tmp="$(CamQrToTxt)"; echo "$tmp"; tocliptxt "$tmp"; crap;;
+'2') tmp="$(ClipQrToTxt)"; echo "$tmp"; tocliptxt "$tmp"; crap;;
+'3') tmp="$(ClipTxtToQr)"; echo "$tmp"; tocliptxt "$tmp"; crap;;
+'4') tmp="$(ClipTxtToB64)"; echo "$tmp"; tocliptxt "$tmp"; crap;;
+'5') tmp="$(ClipB64ToTxt)"; echo "$tmp"; tocliptxt "$tmp"; crap;;
+'-') jumpto readme;;
+'\')  exit 0;;
+  *)  jumpto mma;;
+esac; jumpto mma
