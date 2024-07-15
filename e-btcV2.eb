@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 20240711_2120_est_EJR
+# 20240714_1829_est_EJR
 # btcV2
 #=== bash functions ======================================================================================
 jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v ':$'); sleep .1; eval "$LV2"; exit; }
@@ -250,7 +250,8 @@ clear; echo -e "================  M a i n  M e n u  ============================
 ( 8 ) QR    FROM  TXT       (Clipboard)
 ( 9 ) BAL   FROM  ADDR      IN  BASH
 ( 0 ) BAL   FROM  ADDR      IN  BROWSER
-( - ) Readme
+( - ) ZPRV  FROM  WORDS
+( = ) Readme
 ( \ ) EXIT"
 
 read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
@@ -264,7 +265,26 @@ read -rsn1 InKey; echo; InKey=${InKey,,}; clear; case "$InKey" in
 '8') tmp="$(QrMaker)"; echo "$tmp"; toclip "$tmp"; crap;;
 '9') clear; echo 'Enter Address'; read tmp; balnvol "$tmp"; crap;;
 '0') clear; echo 'Enter Address'; read tmp; xdg-open "https://mempool.space/address/$tmp" >>/dev/null 2>&1 & disown;;
-'-') jumpto readme;;
+'-')
+  echo 'Enter Phrase:'; read in; clear
+  pbkdf2=$(mnemonic_to_pbkdf2 "$in")
+  s1x='0488ade4000000000000000000'
+  s1y='049d7878000000000000000000'
+  s1z='04b2430c000000000000000000'
+  s2=$(echo "$pbkdf2" | cut -c 65-128)
+  s3='00'
+  s4=$(echo "$pbkdf2" | cut -c 1-64)
+  s5x=$(echo -n "$s1x$s2$s3$s4" | xxd -r -p | openssl dgst -sha256 -binary | openssl dgst -sha256 -binary | xxd -p -c 64 | head -c 8)
+  s5y=$(echo -n "$s1y$s2$s3$s4" | xxd -r -p | openssl dgst -sha256 -binary | openssl dgst -sha256 -binary | xxd -p -c 64 | head -c 8)
+  s5z=$(echo -n "$s1z$s2$s3$s4" | xxd -r -p | openssl dgst -sha256 -binary | openssl dgst -sha256 -binary | xxd -p -c 64 | head -c 8)
+  prvx=$(echo -n "$s1x$s2$s3$s4$s5x" | xxd -r -p | base58)
+  prvy=$(echo -n "$s1y$s2$s3$s4$s5y" | xxd -r -p | base58)
+  prvz=$(echo -n "$s1z$s2$s3$s4$s5z" | xxd -r -p | base58)
+  tmp=$(echo -e "WORDS=$in\n\nPBKDF2=$pbkdf2\n\n$prvx\n\n$prvy\n\n$prvz")
+  echo "$tmp"; toclip "$tmp"; crap
+;;
+
+'=') jumpto readme;;
 '\')  exit 0;;
   *)  jumpto mma;;
 esac; jumpto mma
