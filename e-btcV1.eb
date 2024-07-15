@@ -101,7 +101,7 @@ for (( i=0; i<${#Tl5}; i+=11 )); do Tl6=${Tl5:$i:11}; echo $((2#${Tl6})); done >
 while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
 local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
 clear; echo; echo 'saving.......'; touch $logF $logF1
-for i in "${TlData[@]}"; do value="${i#*: }"; qrencode -t ASCIIi "$value" >>$logF; echo -e "\n⬆️ ${i%%:*}⬆️\n" >>$logF; done
+for i in "${TlData[@]}"; do value="${i#*: }"; TxtToQr "$value" >>$logF; echo -e "\n⬆️ ${i%%:*}⬆️\n" >>$logF; done
 echo -e "**********$(date -u '+%Y-%m-%d %H:%M:%S') UTC **************** $(date '+%Y-%m-%d %H:%M:%S') LocalTime ************
 *UserOGin*        $userOGin
 *UserOGout*       $userOGout
@@ -130,7 +130,7 @@ for (( i=0; i<${#Tt5}; i+=11 )); do Tt6=${Tt5:$i:11}; echo $((2#${Tt6})); done >
 while read PhLN; do PhLN=$((PhLN + 1)); sed -n "${PhLN}p" "$bitwords"; done < "$PhFN" > "$PhF"
 local PhStr=$(cat "$PhF" | tr '\n' ' ' | sed 's/ *$//')
 clear; echo; echo '=============== QR CODES =================='
-for i in "${TtData[@]}"; do value="${i#*: }"; qrencode -t ASCIIi "$value"; echo -e "\n⬆️ ${i%%:*}⬆️\n"; done
+for i in "${TtData[@]}"; do value="${i#*: }"; TxtToQr "$value"; echo -e "\n⬆️ ${i%%:*}⬆️\n"; done
 echo -e "*************************************************************************************************************************************************************************
 *UserOGin*        $userOGin
 *UserOGout*       $userOGout
@@ -288,7 +288,8 @@ jumpto() { local LV1=$1; local LV2=$(sed -n "/$LV1:/{:a;n;p;ba};" $0 | grep -v '
 crap() { sleep .2; read -n 1 -p '*ANY-KEY*'; echo; }
 GetDeps() { clear; echo 'Ctrl-C now if you dont want to install Dependencies'; crap; for i in "${Dep_Apt[@]}"; do if ! dpkg -l | grep -q "^ii  $i "; then echo "Installing $i..."; sudo apt install -y "$i"; else echo "You Have $i"; fi; done; for i in "${Dep_Pip3[@]}"; do if ! pip3 show "$i" &> /dev/null; then echo "Installing $i..."; pip3 install "$i"; else echo "$i is already installed."; fi; done; }
 toclip() { echo -n "$1" | xclip -selection clipboard; }
-makeclipQR() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; echo "$In1"; qrencode -t ANSIUTF8 "$In1"; }
+TxtToQr() { local In1="$1"; local Out=$(qrencode -m 2 -t utf8 <<< "$In1"); echo "$Out"; }
+ClipTxtToQr() { local In1=$(xclip -o -selection clipboard); if [ -z "$In1" ]; then echo "Clipboard is empty."; return 1; fi; local Out=$(qrencode -m 2 -t utf8 <<< "$In1"); echo "$Out"; }
 readclipQR() { xclip -selection clipboard -t image/png -o > /tmp/clipboard.png; local Out=$(zbarimg --quiet --raw /tmp/clipboard.png); echo "Decoded text from QR code:"; echo "$Out"; rm /tmp/clipboard.png; }
 stock_calc() { local purchase_price; local total_investment; local current_price; local quantity; local current_value; local profit_or_loss; validate_input() { while true; do read -p "$1" input; if [[ $input =~ ^[0-9]*(\.[0-9]*)?$ ]]; then break; else echo "Invalid input. Please enter a valid numeric value."; fi; done; }; clear; validate_input "Enter bitcoin start-price (per coin): "; purchase_price=$input; validate_input "Enter what we bought (in dollars): "; total_investment=$input; validate_input "Enter bitcoin end-price (per coin): "; current_price=$input; quantity=$(bc <<< "scale=8; $total_investment / $purchase_price"); current_value=$(bc <<< "scale=2; $current_price * $quantity"); profit_or_loss=$(bc <<< "scale=2; ($current_price * $quantity) - $total_investment"); clear; printf "Original Unit Value:\n \$%.2f\n" "$purchase_price"; printf "Original Investment Value:\n \$%.2f\n" "$total_investment"; printf "Current Unit Value:\n \$%.2f\n" "$current_price"; printf "Current Investment Value:\n \$%.2f\n" "$current_value"; printf "Profit OR Loss:\n \$%.2f\n" "$profit_or_loss"; echo; }
 txt2ssl() { local In="$1"; local Out=$(echo -n "$In" | openssl aes-256-cbc -a -salt -pass pass:"$EncMsgPass" -pbkdf2); echo -n "$Out"; }
@@ -703,7 +704,7 @@ tv='hex2txt'; echo "${tv}: Input Data (Finish with a new line and Ctrl-D)"; whil
 jumpto mmam
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
 mmam9:
-makeclipQR; crap
+ClipTxtToQr; crap
 jumpto mmam
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
 mmam0:
